@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课题生成器 - Bauhaus</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #E63946;    /* 红 */
+            --secondary: #457B9D;  /* 蓝 */
+            --accent: #F4A261;     /* 黄橙 */
+            --black: #1D1D1D;
+            --white: #FAFAFA;
+            --gray: #E5E5E5;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--white);
+            color: var(--black);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 主容器 */
+        .container {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            height: 100vh;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            background: var(--black);
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            border-right: 4px solid var(--primary);
+        }
+        
+        .logo {
+            padding: 40px 30px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo h1 {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: -3px;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        
+        .logo .tagline {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.5;
+        }
+        
+        /* 任务列表 */
+        .tasks {
+            flex: 1;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+        
+        .task {
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            position: relative;
+        }
+        
+        .task::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+        
+        .task:hover::before {
+            width: 4px;
+        }
+        
+        .task.active::before {
+            width: 4px;
+            background: var(--secondary);
+        }
+        
+        .task-icon {
+            width: 32px;
+            height: 32px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .task-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .task-meta {
+            font-size: 11px;
+            opacity: 0.4;
+        }
+        
+        /* 统计 */
+        .stats {
+            padding: 30px 20px;
+            border-top: 2px solid rgba(255,255,255,0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.4;
+        }
+        
+        /* 用户状态区域 */
+        .user-area {
+            padding: 20px;
+            border-top: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .login-prompt {
+            text-align: center;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 2px solid var(--white);
+            color: var(--white);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .login-button:hover {
+            background: var(--white);
+            color: var(--black);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            font-size: 24px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-details {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .history-link {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.2s;
+        }
+        
+        .history-link:hover {
+            color: var(--white);
+        }
+        
+        .logout-button {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.6);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .logout-button:hover {
+            border-color: var(--white);
+            color: var(--white);
+        }
+        
+        /* 主区域 */
+        .main {
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+        }
+        
+        /* 顶部栏 */
+        .header {
+            padding: 30px 40px;
+            border-bottom: 2px solid var(--gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        
+        .status.ready .status-dot { background: #2D6A4F; }
+        .status.busy .status-dot { background: var(--accent); animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* 对话区域 */
+        .chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 60px 80px;
+        }
+        
+        .message {
+            max-width: 600px;
+            margin-bottom: 40px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            margin-left: auto;
+        }
+        
+        .bubble {
+            padding: 24px 32px;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        
+        .message.assistant .bubble {
+            background: var(--gray);
+            border-left: 4px solid var(--black);
+        }
+        
+        .message.user .bubble {
+            background: var(--black);
+            color: var(--white);
+        }
+        
+        .message .time {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.3;
+            margin-top: 8px;
+            padding-left: 32px;
+        }
+        
+        /* 进度卡片 */
+        .progress-card {
+            background: var(--white);
+            border: 2px solid var(--black);
+            padding: 32px;
+            margin: 24px 0;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: var(--gray);
+            margin-bottom: 24px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.5s;
+        }
+        
+        .steps {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+        }
+        
+        .step-dot {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--gray);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        
+        .step.completed .step-dot {
+            background: var(--black);
+            border-color: var(--black);
+            color: var(--white);
+        }
+        
+        .step.active .step-dot {
+            border-color: var(--primary);
+            color: var(--primary);
+            font-weight: 900;
+        }
+        
+        /* 选项按钮 */
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .option {
+            background: var(--white);
+            border: 2px solid var(--black);
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .option:hover {
+            background: var(--black);
+            color: var(--white);
+        }
+        
+        /* 内容预览 */
+        .preview {
+            background: var(--black);
+            color: var(--white);
+            padding: 32px;
+            margin-top: 24px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .action {
+            background: var(--white);
+            border: 2px solid var(--black);
+            padding: 16px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .action:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--white);
+        }
+        
+        /* 输入区域 */
+        .input-area {
+            padding: 30px 80px 40px;
+            border-top: 2px solid var(--gray);
+        }
+        
+        .shortcuts {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .shortcut {
+            background: var(--gray);
+            padding: 10px 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .shortcut:hover {
+            background: var(--white);
+            border-color: var(--black);
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 16px;
+        }
+        
+        input {
+            flex: 1;
+            background: var(--white);
+            border: 2px solid var(--black);
+            padding: 16px 24px;
+            font-size: 15px;
+            font-family: inherit;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        button.send {
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            padding: 16px 48px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button.send:hover {
+            background: var(--primary);
+        }
+        
+        button.send:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        /* 加载动画 */
+        .typing {
+            display: flex;
+            gap: 8px;
+            padding: 24px 32px;
+            background: var(--gray);
+            border-left: 4px solid var(--black);
+        }
+        
+        .typing span {
+            width: 8px;
+            height: 8px;
+            background: var(--black);
+            border-radius: 50%;
+            animation: bounce 1s infinite;
+        }
+        
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar { display: none; }
+            
+            .chat {
+                padding: 30px;
+            }
+            
+            .input-area {
+                padding: 20px;
+            }
+            
+            .actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>课题</h1>
+                <div class="tagline">AI Document Generator</div>
+            </div>
+            
+            <div class="tasks">
+                <div class="task" data-type="shenbao">
+                    <div class="task-icon">01</div>
+                    <div class="task-title">课题申报书</div>
+                    <div class="task-meta">8000-10000 字</div>
+                </div>
+                
+                <div class="task" data-type="kaiti">
+                    <div class="task-icon">02</div>
+                    <div class="task-title">开题报告</div>
+                    <div class="task-meta">3000-5000 字</div>
+                </div>
+                
+                <div class="task" data-type="zhongqi">
+                    <div class="task-icon">03</div>
+                    <div class="task-title">中期检查</div>
+                    <div class="task-meta">2000-3000 字</div>
+                </div>
+                
+                <div class="task" data-type="jieti">
+                    <div class="task-icon">04</div>
+                    <div class="task-title">结题报告</div>
+                    <div class="task-meta">5000-10000 字</div>
+                </div>
+            </div>
+            
+            <div class="stats">
+                <div>
+                    <div class="stat-number" id="todayCount">0</div>
+                    <div class="stat-label">今日生成</div>
+                </div>
+                <div>
+                    <div class="stat-number" id="totalWords">0</div>
+                    <div class="stat-label">累计字数</div>
+                </div>
+            </div>
+            
+            <!-- 用户状态区域 -->
+            <div class="user-area">
+                <!-- 未登录状态 -->
+                <div id="loginPrompt" class="login-prompt">
+                    <button class="login-button" onclick="window.location.href='/login.html'">
+                        登录 / 注册
+                    </button>
+                </div>
+                <!-- 已登录状态 -->
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">用户名</div>
+                        <a href="/history.html" class="history-link">📜 历史记录</a>
+                    </div>
+                    <button class="logout-button" onclick="logout()">退出</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主区域 -->
+        <div class="main">
+            <div class="header">
+                <h2>Mission Control</h2>
+                <div class="status ready" id="status">
+                    <span class="status-dot"></span>
+                    <span>Ready</span>
+                </div>
+            </div>
+            
+            <div class="chat" id="chat">
+                <div class="message assistant">
+                    <div class="bubble">
+                        你好。我是课题 AI 助手。
+                        <br><br>
+                        我可以生成课题申报书、开题报告、中期检查、结题报告。
+                        <br><br>
+                        直接告诉我你想生成什么，我会引导你完成。
+                    </div>
+                    <div class="time">AI Assistant · Now</div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <div class="shortcuts">
+                    <div class="shortcut" onclick="quick('市级数学课题申报书')">市级数学课题</div>
+                    <div class="shortcut" onclick="quick('区级语文课题申报书')">区级语文课题</div>
+                    <div class="shortcut" onclick="quick('省级英语课题申报书')">省级英语课题</div>
+                </div>
+                
+                <div class="input-row">
+                    <input 
+                        type="text" 
+                        id="input" 
+                        placeholder="输入需求..."
+                        onkeypress="if(event.key==='Enter')send()"
+                    >
+                    <button class="send" onclick="send()" id="sendBtn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let sessionId = null;
+        let isProcessing = false;
+        let currentParams = {};
+        let currentDocumentType = null;
+        let stats = { todayCount: 0, totalWords: 0 };
+        let generatedContent = '';
+        
+        // 用户状态管理
+        function checkUserStatus() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            
+            const loginPrompt = document.getElementById('loginPrompt');
+            const userInfo = document.getElementById('userInfo');
+            const userName = document.getElementById('userName');
+            
+            if (token && user) {
+                loginPrompt.style.display = 'none';
+                userInfo.style.display = 'flex';
+                userName.textContent = user.username;
+            } else {
+                loginPrompt.style.display = 'block';
+                userInfo.style.display = 'none';
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            checkUserStatus();
+        }
+        
+        function getAuthHeaders() {
+            const token = localStorage.getItem('token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+        
+        // 页面加载时检查用户状态
+        checkUserStatus();
+        
+        function init() {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            document.getElementById('input').focus();
+        }
+        
+        function quick(text) {
+            document.getElementById('input').value = text;
+            send();
+        }
+        
+        async function send() {
+            const input = document.getElementById('input');
+            const message = input.value.trim();
+            
+            if (!message || isProcessing) return;
+            
+            addMessage('user', message);
+            input.value = '';
+            
+            isProcessing = true;
+            updateStatus('busy');
+            disableInput();
+            
+            const loadingId = showLoading();
+            
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ message, sessionId })
+                });
+                
+                const data = await res.json();
+                removeLoading(loadingId);
+                
+                if (data.success) {
+                    if (data.sessionId) sessionId = data.sessionId;
+                    handleResponse(data);
+                } else {
+                    addMessage('assistant', '错误: ' + data.error);
+                }
+            } catch (e) {
+                removeLoading(loadingId);
+                addMessage('assistant', '网络错误');
+            }
+            
+            isProcessing = false;
+            updateStatus('ready');
+            enableInput();
+        }
+        
+        function handleResponse(data) {
+            switch (data.type) {
+                case 'message':
+                    addMessage('assistant', data.content);
+                    break;
+                
+                case 'question':
+                    showQuestion(data);
+                    break;
+                
+                case 'start_generation':
+                    startGeneration(data);
+                    break;
+            }
+        }
+        
+        function showQuestion(data) {
+            const { content, options, progress, collectedCount, totalCount, field } = data;
+            
+            let html = `
+                <div class="progress-card">
+                    <div class="progress-header">
+                        <span>信息收集</span>
+                        <span>${progress}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    <div class="steps">
+                        ${generateSteps(collectedCount, totalCount)}
+                    </div>
+                </div>
+                <div>${content.replace(/\n/g, '<br>')}</div>
+            `;
+            
+            if (options && options.length > 0) {
+                html += '<div class="options">';
+                options.forEach((opt, i) => {
+                    html += `<div class="option" onclick="select('${opt}')">${opt}</div>`;
+                });
+                html += '</div>';
+            }
+            
+            addMessage('assistant', html, true);
+        }
+        
+        function generateSteps(completed, total) {
+            let html = '';
+            for (let i = 0; i < total; i++) {
+                const status = i < completed ? 'completed' : (i === completed ? 'active' : '');
+                html += `
+                    <div class="step ${status}">
+                        <div class="step-dot">${i < completed ? '✓' : i + 1}</div>
+                        <span>步骤 ${i + 1}</span>
+                    </div>
+                `;
+            }
+            return html;
+        }
+        
+        function select(option) {
+            document.getElementById('input').value = option;
+            send();
+        }
+        
+        async function startGeneration(data) {
+            const { content, params, documentType } = data;
+            currentParams = params;
+            currentDocumentType = documentType;
+            
+            updateTaskStatus(documentType, 'running');
+            addMessage('assistant', content.replace(/\n/g, '<br>'));
+            
+            try {
+                const res = await fetch('/api/generate-with-params', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ sessionId, documentType, params })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    updateTaskStatus(documentType, 'completed');
+                    stats.todayCount++;
+                    stats.totalWords += result.wordCount;
+                    updateStats();
+                    showResult(result);
+                } else {
+                    updateTaskStatus(documentType, 'failed');
+                    addMessage('assistant', '生成失败: ' + result.error);
+                }
+            } catch (e) {
+                updateTaskStatus(documentType, 'failed');
+                addMessage('assistant', '生成失败');
+            }
+        }
+        
+        function showResult(result) {
+            generatedContent = result.content;
+            const preview = result.content.substring(0, 600);
+            
+            const html = `
+                生成完成
+                <br><br>
+                <strong>${result.wordCount}</strong> 字 · ${getDocName(result.documentType)}
+                <div class="preview">${preview}...</div>
+                <div class="actions">
+                    <div class="action" onclick="copy()">复制全文</div>
+                    <div class="action" onclick="download()">下载文档</div>
+                    <div class="action" onclick="newTask()">新建任务</div>
+                </div>
+            `;
+            
+            addMessage('assistant', html, true);
+        }
+        
+        function getDocName(type) {
+            const names = {
+                shenbao: '课题申报书',
+                kaiti: '开题报告',
+                zhongqi: '中期检查',
+                jieti: '结题报告'
+            };
+            return names[type] || type;
+        }
+        
+        function copy() {
+            if (generatedContent) {
+                navigator.clipboard.writeText(generatedContent).then(() => alert('已复制'));
+            }
+        }
+        
+        function download() {
+            if (generatedContent) {
+                const blob = new Blob([generatedContent], { type: 'text/markdown' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `${getDocName(currentDocumentType)}_${new Date().toISOString().split('T')[0]}.md`;
+                a.click();
+            }
+        }
+        
+        function newTask() {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            currentParams = {};
+            currentDocumentType = null;
+            document.querySelectorAll('.task').forEach(t => t.classList.remove('active'));
+            addMessage('assistant', '已重置。可以开始新任务。');
+        }
+        
+        function addMessage(role, content, isHtml = false) {
+            const chat = document.getElementById('chat');
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            const sender = role === 'user' ? 'You' : 'AI Assistant';
+            
+            div.innerHTML = `
+                <div class="bubble">${isHtml ? content : content.replace(/\n/g, '<br>')}</div>
+                <div class="time">${sender} · ${time}</div>
+            `;
+            
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+        
+        function showLoading() {
+            const chat = document.getElementById('chat');
+            const div = document.createElement('div');
+            const id = 'loading-' + Date.now();
+            div.id = id;
+            div.className = 'message assistant';
+            div.innerHTML = `
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            return id;
+        }
+        
+        function removeLoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+        
+        function updateStatus(status) {
+            const s = document.getElementById('status');
+            s.className = 'status ' + status;
+            s.querySelector('span:last-child').textContent = status === 'ready' ? 'Ready' : 'Processing';
+        }
+        
+        function updateTaskStatus(type, status) {
+            const task = document.querySelector(`.task[data-type="${type}"]`);
+            if (task) {
+                task.classList.add('active');
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('todayCount').textContent = stats.todayCount;
+            document.getElementById('totalWords').textContent = stats.totalWords.toLocaleString();
+        }
+        
+        function disableInput() {
+            document.getElementById('input').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+        }
+        
+        function enableInput() {
+            document.getElementById('input').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('input').focus();
+        }
+        
+        init();
+    </script>
+</body>
+</html>
