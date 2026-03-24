@@ -110,18 +110,33 @@ export async function executeGeneration(sessionId, withReview = false, onEvent) 
   // ── Phase 1: 并行预处理（标题生成 + 文献搜索）──────────────────
   emit('phase', { phase: 1, name: '预处理', message: '正在生成课题名称 & 搜索文献...' });
 
+  emit('agent', { name: 'TitleAgent', status: 'running', log: '正在生成课题名称候选...' });
+  emit('agent', { name: 'LiteratureAgent', status: 'running', log: '正在搜索国内外学术文献...' });
+
   const [titleResult, literatureResult] = await Promise.all([
     // 只有没有提供标题时才生成
     !p.title && session.docType === 'shenbao'
       ? titleAgent.run({ level: p.level, subject: p.subject, grade: p.grade, direction: p.direction })
-          .then(r => { emit('agent', { name: 'TitleAgent', status: 'done', data: r }); return r; })
-      : Promise.resolve(null),
+          .then(r => {
+            emit('agent', { name: 'TitleAgent', status: 'done',
+              log: r.titles?.length ? `生成了 ${r.titles.length} 个候选标题` : '标题生成完成',
+              result: { recommended: r.recommended, candidates: r.titles?.slice(0,3) }
+            });
+            return r;
+          })
+      : Promise.resolve(null).then(r => { emit('agent', { name: 'TitleAgent', status: 'skip', log: '已有课题名称，跳过' }); return r; }),
 
     // 文献搜索（申报书和开题报告才需要）
     ['shenbao', 'kaiti'].includes(session.docType)
       ? literatureAgent.run({ subject: p.subject, direction: p.direction, grade: p.grade, docType: session.docType })
-          .then(r => { emit('agent', { name: 'LiteratureAgent', status: 'done', data: { source: r.source, count: r.results.length } }); return r; })
-      : Promise.resolve(null),
+          .then(r => {
+            emit('agent', { name: 'LiteratureAgent', status: 'done',
+              log: `找到 ${r.results?.length || 0} 篇文献（来源：${r.source}）`,
+              result: { source: r.source, count: r.results?.length || 0, preview: r.results?.slice(0,3).map(x=>x.title||'').filter(Boolean) }
+            });
+            return r;
+          })
+      : Promise.resolve(null).then(r => { emit('agent', { name: 'LiteratureAgent', status: 'skip', log: '此文档类型无需文献搜索' }); return r; }),
   ]);
 
   // 如果生成了标题，用推荐的那个

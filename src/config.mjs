@@ -23,14 +23,14 @@ export const cfg = {
   ai: {
     provider: process.env.AI_PROVIDER || 'glm',   // glm | deepseek | openai
     apiKey: require('AI_API_KEY'),
-    model: process.env.AI_MODEL || 'glm-4-plus',  // 默认用 plus，不用 flash
+    model: process.env.AI_MODEL || 'glm-4-5',  // 默认用 plus，不用 flash
     maxTokens: parseInt(process.env.AI_MAX_TOKENS || '8000'),
     temperature: parseFloat(process.env.AI_TEMPERATURE || '0.7'),
   },
 
   // 各 provider 的 API 地址
   aiEndpoints: {
-    glm: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    glm: 'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions',
     deepseek: 'https://api.deepseek.com/chat/completions',
     openai: 'https://api.openai.com/v1/chat/completions',
   },

@@ -22,7 +22,7 @@ app.use(cors({
   origin: cfg.nodeEnv === 'development' ? true : cfg.allowedOrigins,
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(join(__dirname, 'frontend')));
 
 // ---- Rate Limiting ----

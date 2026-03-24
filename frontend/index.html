@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>课题 AI 助手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #E63946; --blue: #457B9D; --amber: #F4A261;
+  --green: #2D6A4F; --black: #1D1D1D; --white: #FAFAFA;
+  --gray: #888; --border: #2a2a2a; --surface: #252525;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); height: 100vh; display: flex; overflow: hidden; font-size: 13px; }
+
+/* Sidebar */
+.sidebar { width: 200px; background: #111; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-logo { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+.sidebar-logo h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.5px; }
+.sidebar-logo h1 span { color: var(--red); }
+.sidebar-logo p { font-size: 10px; opacity: .4; margin-top: 2px; }
+.sidebar-nav { padding: 8px; flex: 1; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; cursor: pointer; border: 1px solid transparent; transition: all .15s; }
+.nav-item:hover { background: var(--surface); border-color: var(--border); }
+.nav-item.active { background: var(--surface); border-color: var(--border); }
+.nav-icon { font-size: 14px; width: 20px; text-align: center; }
+.nav-label { font-size: 12px; font-weight: 500; }
+.nav-sub { font-size: 9px; opacity: .4; }
+
+/* Main layout */
+.main { flex: 1; display: flex; overflow: hidden; }
+
+/* Left panel - Chat */
+.left-panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); min-width: 0; }
+.topbar { height: 44px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+.topbar-title { font-size: 12px; font-weight: 600; opacity: .7; }
+.topbar-actions { display: flex; gap: 8px; }
+
+/* Chat area */
+.chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chat-area::-webkit-scrollbar { width: 4px; }
+.chat-area::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* Chat messages */
+.msg { display: flex; gap: 10px; max-width: 85%; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar { width: 28px; height: 28px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.msg.ai .msg-avatar { background: var(--surface); }
+.msg.user .msg-avatar { background: var(--red); color: white; }
+.msg-bubble { padding: 10px 14px; border: 1px solid var(--border); line-height: 1.6; font-size: 13px; }
+.msg.ai .msg-bubble { background: var(--surface); }
+.msg.user .msg-bubble { background: #2a1a1a; border-color: #3a2020; }
+.msg-bubble p { margin-bottom: 6px; }
+.msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble ul { padding-left: 16px; }
+.msg-bubble li { margin-bottom: 4px; }
+
+/* Typing indicator */
+.typing { display: flex; gap: 4px; align-items: center; padding: 10px 14px; }
+.typing span { width: 6px; height: 6px; background: var(--gray); border-radius: 50%; animation: bounce .8s infinite; }
+.typing span:nth-child(2) { animation-delay: .15s; }
+.typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+/* Result view */
+.result-view { flex: 1; overflow-y: auto; padding: 24px; }
+.result-view::-webkit-scrollbar { width: 4px; }
+.result-view::-webkit-scrollbar-thumb { background: var(--border); }
+.result-doc { font-family: 'SimSun', serif; font-size: 14px; line-height: 2; white-space: pre-wrap; color: #ddd; }
+
+/* Status bar */
+.status-bar { height: 28px; border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; font-size: 11px; opacity: .5; flex-shrink: 0; }
+
+/* Input area */
+.input-area { border-top: 1px solid var(--border); padding: 12px 16px; display: flex; gap: 8px; flex-shrink: 0; }
+.input-area textarea { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--white); padding: 10px 12px; font-family: inherit; font-size: 13px; resize: none; height: 44px; line-height: 1.4; outline: none; transition: border-color .15s; }
+.input-area textarea:focus { border-color: var(--red); }
+.btn-send { background: var(--red); color: white; border: none; padding: 0 20px; font-size: 13px; font-weight: 600; cursor: pointer; height: 44px; white-space: nowrap; transition: opacity .15s; }
+.btn-send:hover { opacity: .85; }
+.btn-send:disabled { opacity: .3; cursor: not-allowed; }
+
+/* Buttons */
+.btn { background: transparent; border: 1px solid var(--border); color: var(--white); padding: 6px 14px; font-size: 12px; cursor: pointer; transition: all .15s; }
+.btn:hover { background: var(--surface); }
+.btn.primary { background: var(--red); border-color: var(--red); }
+.btn.primary:hover { opacity: .85; }
+
+/* Right panel */
+.right-panel { width: 360px; display: flex; flex-direction: column; flex-shrink: 0; background: #111; }
+.panel-header { height: 44px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+.panel-header-title { font-size: 12px; font-weight: 600; }
+.panel-status { font-size: 10px; opacity: .4; }
+.panel-body { flex: 1; overflow-y: auto; padding: 12px; }
+.panel-body::-webkit-scrollbar { width: 3px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border); }
+.panel-footer { border-top: 1px solid var(--border); padding: 12px; flex-shrink: 0; }
+
+/* Smart Form */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 10px; font-weight: 600; opacity: .5; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.form-label span { color: var(--red); }
+.btn-opts { display: flex; flex-wrap: wrap; gap: 4px; }
+.btn-opt { background: transparent; border: 1px solid var(--border); color: var(--white); padding: 4px 10px; font-size: 11px; cursor: pointer; transition: all .15s; }
+.btn-opt:hover { border-color: var(--gray); }
+.btn-opt.selected { background: var(--red); border-color: var(--red); color: white; }
+.btn-opt.auto-detected { border-color: var(--amber); color: var(--amber); }
+.form-input { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--white); padding: 6px 10px; font-size: 12px; font-family: inherit; outline: none; }
+.form-input:focus { border-color: var(--red); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.toggle { position: relative; display: inline-block; width: 32px; height: 18px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--border); cursor: pointer; transition: .2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 12px; height: 12px; left: 3px; bottom: 3px; background: white; transition: .2s; }
+input:checked + .toggle-slider { background: var(--red); }
+input:checked + .toggle-slider:before { transform: translateX(14px); }
+.btn-generate { width: 100%; background: var(--red); color: white; border: none; padding: 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+.btn-generate:hover { opacity: .85; }
+.btn-generate:disabled { opacity: .3; cursor: not-allowed; }
+
+/* Mission Control */
+.mission-header { font-size: 10px; font-weight: 600; opacity: .4; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.agent-card { border: 1px solid var(--border); margin-bottom: 8px; overflow: hidden; }
+.agent-card-header { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface); }
+.agent-icon { font-size: 14px; }
+.agent-name { font-size: 12px; font-weight: 600; flex: 1; }
+.agent-badge { font-size: 10px; padding: 2px 6px; border: 1px solid; }
+.agent-badge.waiting  { border-color: var(--border); color: var(--gray); }
+.agent-badge.running  { border-color: var(--amber); color: var(--amber); }
+.agent-badge.done     { border-color: var(--green); color: var(--green); }
+.agent-badge.skip     { border-color: var(--border); color: var(--gray); opacity: .5; }
+.agent-badge.error    { border-color: var(--red); color: var(--red); }
+.agent-log { padding: 6px 10px; font-size: 11px; opacity: .6; border-top: 1px solid var(--border); }
+.agent-result { padding: 6px 10px; font-size: 11px; border-top: 1px solid var(--border); background: #1a1a1a; }
+.agent-result-item { opacity: .7; margin-bottom: 2px; }
+.agent-result-item.highlight { color: var(--amber); opacity: 1; }
+
+/* Section progress */
+.section-list { margin-top: 4px; }
+.section-row { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-top: 1px solid #1e1e1e; font-size: 11px; }
+.section-name { flex: 1; opacity: .7; }
+.section-status { font-size: 10px; }
+.section-status.generating { color: var(--amber); }
+.section-status.reviewing  { color: var(--blue); }
+.section-status.rewriting  { color: var(--amber); }
+.section-status.scored     { color: var(--green); }
+.section-score { font-size: 10px; font-weight: 600; min-width: 24px; text-align: right; }
+.section-score.high { color: var(--green); }
+.section-score.mid  { color: var(--amber); }
+.section-score.low  { color: var(--red); }
+
+/* Score summary */
+.score-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.score-big { font-size: 32px; font-weight: 700; color: var(--green); }
+.score-label { font-size: 11px; opacity: .5; }
+
+/* Welcome */
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; }
+.welcome h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.welcome p { opacity: .5; line-height: 1.7; font-size: 13px; }
+.welcome-hint { margin-top: 20px; font-size: 11px; opacity: .3; }
+
+/* Generating spinner */
+.gen-spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>课题 <span>AI</span></h1>
+    <p>Research Assistant</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" onclick="startNew()">
+      <span class="nav-icon">✦</span>
+      <div><div class="nav-label">新建课题</div><div class="nav-sub">Multi-Agent</div></div>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">◈</span>
+      <div><div class="nav-label">历史记录</div><div class="nav-sub">My Docs</div></div>
+    </div>
+  </nav>
+</aside>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left panel: Chat + Result -->
+  <div class="left-panel">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">选题顾问</span>
+      <div class="topbar-actions" id="topbarActions" style="display:none">
+        <button class="btn" onclick="startNew()">新建</button>
+        <button class="btn primary" onclick="exportWord()">导出 Word</button>
+      </div>
+    </div>
+
+    <!-- Chat view -->
+    <div id="chatView" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="chat-area" id="chatArea">
+        <!-- Welcome message injected by JS -->
+      </div>
+      <div class="status-bar" id="statusBar">就绪</div>
+      <div class="input-area">
+        <textarea id="msgInput" placeholder="和 AI 顾问聊聊你的研究方向..." rows="1"
+          onkeydown="handleKeydown(event)" oninput="autoResize(this)"></textarea>
+        <button class="btn-send" id="sendBtn" onclick="sendMessage()">发送</button>
+      </div>
+    </div>
+
+    <!-- Result view (shown after generation) -->
+    <div id="resultView" style="flex:1;display:none;flex-direction:column;overflow:hidden">
+      <div class="result-view">
+        <pre class="result-doc" id="resultDoc"></pre>
+      </div>
+      <div class="status-bar" id="resultStatus"></div>
+    </div>
+  </div>
+
+  <!-- Right panel: Form / Mission Control -->
+  <div class="right-panel">
+    <div class="panel-header">
+      <span class="panel-header-title" id="panelTitle">智能表单</span>
+      <span class="panel-status" id="panelStatus">等待确认选题</span>
+    </div>
+
+    <!-- Form panel -->
+    <div id="formPanel" style="display:flex;flex-direction:column;height:calc(100% - 44px);overflow:hidden">
+      <div class="panel-body" id="formBody">
+        <div style="opacity:.3;font-size:12px;text-align:center;padding:40px 0">
+          与 AI 顾问确认选题后<br>表单将自动填充
+        </div>
+      </div>
+      <div class="panel-footer" id="formFooter" style="display:none">
+        <div style="margin-bottom:10px">
+          <div class="toggle-row">
+            <span style="font-size:11px;opacity:.7">去AI化润色</span>
+            <label class="toggle"><input type="checkbox" id="withReview"><span class="toggle-slider"></span></label>
+          </div>
+          <div style="font-size:10px;opacity:.3;margin-top:4px">降低AI检测率，耗时+2分钟</div>
+        </div>
+        <button class="btn-generate" id="generateBtn" onclick="startGeneration()" disabled>
+          开始生成 →
+        </button>
+      </div>
+    </div>
+
+    <!-- Mission Control panel -->
+    <div id="missionPanel" style="display:none;flex-direction:column;height:calc(100% - 44px);overflow:hidden">
+      <div class="panel-body" id="missionBody"></div>
+      <div class="panel-footer" id="missionFooter" style="display:none">
+        <div class="score-summary">
+          <div class="score-big" id="avgScoreEl">—</div>
+          <div><div class="score-label">平均质量分</div><div style="font-size:10px;opacity:.3">Critic 评审</div></div>
+        </div>
+        <button class="btn-generate" onclick="exportWord()">导出 Word 文档</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+const state = {
+  chatHistory: [],       // [{role, content}]
+  params: null,          // confirmed params from AI
+  isGenerating: false,
+  generatedContent: null,
+  generatedTitle: null,
+};
+
+// Section definitions for Mission Control
+const SECTION_DEFS = {
+  shenbao: [{id:'title',n:'基本信息'},{id:'background',n:'研究背景'},{id:'literature',n:'研究现状'},{id:'objectives',n:'研究目标'},{id:'framework',n:'理论框架'},{id:'innovation',n:'创新之处'},{id:'methodology',n:'研究方法'},{id:'results',n:'预期成果'},{id:'budget',n:'经费预算'},{id:'references',n:'参考文献'}],
+  kaiti:   [{id:'plan',n:'研究方案'},{id:'literature',n:'文献综述'},{id:'methodology',n:'研究方法'},{id:'timeline',n:'时间安排'},{id:'results',n:'预期成果'},{id:'budget',n:'经费预算'},{id:'references',n:'参考文献'}],
+  zhongqi: [{id:'progress',n:'研究进展'},{id:'achievements',n:'阶段成果'},{id:'issues',n:'问题对策'},{id:'next',n:'下一步计划'},{id:'budget',n:'经费使用'}],
+  jieti:   [{id:'summary',n:'工作总结'},{id:'results',n:'研究成果'},{id:'innovation',n:'创新点'},{id:'value',n:'应用价值'},{id:'issues',n:'问题建议'},{id:'list',n:'成果清单'},{id:'budget',n:'经费决算'},{id:'references',n:'参考文献'}],
+};
+
+// ── Init ───────────────────────────────────────────────────────
+window.onload = () => {
+  addAIMessage('你好！我是课题 AI 顾问。\n\n告诉我你的学科和教学中遇到的问题，我来帮你找到合适的研究方向。\n\n比如："我教初中数学，想研究大单元教学"');
+};
+
+// ── Chat ───────────────────────────────────────────────────────
+function addAIMessage(text) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="msg-avatar">AI</div>
+    <div class="msg-bubble">${formatText(text)}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div class="msg-avatar">你</div>
+    <div class="msg-bubble">${formatText(text)}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'typingIndicator';
+  div.innerHTML = `<div class="msg-avatar">AI</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+function formatText(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || state.isGenerating) return;
+
+  input.value = '';
+  input.style.height = '44px';
+  addUserMessage(text);
+
+  state.chatHistory.push({ role: 'user', content: text });
+  setStatus('AI 顾问思考中...');
+  showTyping();
+  document.getElementById('sendBtn').disabled = true;
+
+  try {
+    const res = await fetch('/api/chat/discuss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: state.chatHistory }),
+    });
+    const data = await res.json();
+    hideTyping();
+
+    if (data.error) {
+      addAIMessage('抱歉，出现了错误：' + data.error);
+      setStatus('错误');
+    } else {
+      addAIMessage(data.reply);
+      state.chatHistory.push({ role: 'assistant', content: data.reply });
+      setStatus('就绪');
+
+      // If AI confirmed params, auto-fill form
+      if (data.confirmed && data.params) {
+        state.params = data.params;
+        renderForm(data.params);
+        document.getElementById('panelTitle').textContent = '智能表单';
+        document.getElementById('panelStatus').textContent = '已自动填充，请确认';
+        addAIMessage('✅ 我已经帮你填好了表单，在右侧确认一下参数，然后点"开始生成"。');
+      }
+    }
+  } catch(e) {
+    hideTyping();
+    addAIMessage('网络错误，请重试。');
+    setStatus('错误');
+  } finally {
+    document.getElementById('sendBtn').disabled = false;
+  }
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = '44px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── Form ───────────────────────────────────────────────────────
+const FORM_FIELDS = [
+  { key: 'docType', label: '文档类型', required: true,
+    options: [{v:'shenbao',l:'课题申报书'},{v:'kaiti',l:'开题报告'},{v:'zhongqi',l:'中期检查报告'},{v:'jieti',l:'结题报告'}] },
+  { key: 'level', label: '课题级别', required: true,
+    options: [{v:'区级',l:'区级'},{v:'市级',l:'市级'},{v:'省级',l:'省级'},{v:'国家级',l:'国家级'}] },
+  { key: 'subject', label: '学科', required: true,
+    options: ['数学','语文','英语','物理','化学','生物','政治','历史','地理','体育','音乐','美术','信息技术'].map(s=>({v:s,l:s})) },
+  { key: 'grade', label: '学段', required: true,
+    options: [{v:'小学',l:'小学'},{v:'初中',l:'初中'},{v:'高中',l:'高中'},{v:'职高',l:'职高'}] },
+  { key: 'direction', label: '研究方向', required: true,
+    options: ['核心素养','大单元教学','跨学科融合','数字化教学','AI赋能','双减政策','项目式学习','差异化教学','评价改革','家校协同'].map(s=>({v:s,l:s})) },
+  { key: 'title', label: '课题名称', required: false, type: 'text', placeholder: '留空自动生成' },
+];
+
+function renderForm(autoParams = {}) {
+  const body = document.getElementById('formBody');
+  body.innerHTML = '';
+
+  for (const field of FORM_FIELDS) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    group.innerHTML = `<div class="form-label">${field.label}${field.required ? '<span>*</span>' : ''}</div>`;
+
+    if (field.type === 'text') {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-input';
+      input.placeholder = field.placeholder || '';
+      input.value = autoParams[field.key] || '';
+      input.oninput = () => { if (!state.params) state.params = {}; state.params[field.key] = input.value; checkReady(); };
+      group.appendChild(input);
+    } else {
+      const opts = document.createElement('div');
+      opts.className = 'btn-opts';
+      for (const opt of field.options) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-opt';
+        btn.textContent = opt.l;
+        const isSelected = autoParams[field.key] === opt.v;
+        if (isSelected) btn.classList.add('selected');
+        btn.onclick = () => {
+          opts.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('selected','auto-detected'));
+          btn.classList.add('selected');
+          if (!state.params) state.params = {};
+          state.params[field.key] = opt.v;
+          checkReady();
+        };
+        opts.appendChild(btn);
+      }
+      group.appendChild(opts);
+    }
+    body.appendChild(group);
+  }
+
+  document.getElementById('formFooter').style.display = 'block';
+  checkReady();
+}
+
+function checkReady() {
+  if (!state.params) { document.getElementById('generateBtn').disabled = true; return; }
+  const required = ['docType','level','subject','grade','direction'];
+  const ok = required.every(k => state.params[k]);
+  document.getElementById('generateBtn').disabled = !ok;
+  document.getElementById('generateBtn').textContent = ok ? '开始生成 →' : '请填写必填项';
+}
+
+// ── Generation ─────────────────────────────────────────────────
+async function startGeneration() {
+  if (state.isGenerating || !state.params) return;
+  state.isGenerating = true;
+
+  const withReview = document.getElementById('withReview').checked;
+  const { docType, ...params } = state.params;
+
+  // Switch right panel to Mission Control
+  document.getElementById('formPanel').style.display = 'none';
+  document.getElementById('missionPanel').style.display = 'flex';
+  document.getElementById('panelTitle').textContent = 'Mission Control';
+  document.getElementById('panelStatus').textContent = '生成中...';
+
+  // Init mission control
+  initMissionControl(docType);
+
+  // Update left panel status
+  setStatus('多 Agent 生成中，请稍候...');
+
+  // Add chat message
+  addAIMessage('🚀 开始生成！你可以在右侧 Mission Control 看板实时查看每个 Agent 的工作进度。');
+
+  try {
+    const res = await fetch('/api/chat/generate/direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ docType, params, withReview }),
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse SSE blocks (separated by \n\n)
+      const blocks = buffer.split('\n\n');
+      buffer = blocks.pop(); // keep incomplete block
+
+      for (const block of blocks) {
+        const eventLine = block.split('\n').find(l => l.startsWith('event: '));
+        const dataLine  = block.split('\n').find(l => l.startsWith('data: '));
+        if (eventLine && dataLine) {
+          try {
+            handleSSEEvent(eventLine.slice(7).trim(), JSON.parse(dataLine.slice(6).trim()));
+          } catch(e) { console.warn('SSE parse error:', e); }
+        }
+      }
+    }
+  } catch(e) {
+    setStatus('生成失败: ' + e.message);
+    addAIMessage('❌ 生成失败：' + e.message);
+    state.isGenerating = false;
+  }
+}
+
+// ── Mission Control ────────────────────────────────────────────
+const agentDefs = [
+  { name: 'TitleAgent',     icon: '🎯', label: '标题生成' },
+  { name: 'LiteratureAgent',icon: '📚', label: '文献搜索' },
+  { name: 'GeneratorAgent', icon: '✍️', label: '章节生成' },
+  { name: 'ReviewerAgent',  icon: '🔬', label: '润色去AI化' },
+];
+
+function initMissionControl(docType) {
+  const body = document.getElementById('missionBody');
+  body.innerHTML = `<div class="mission-header">Agent 工作台</div>`;
+
+  // Agent cards
+  for (const a of agentDefs) {
+    const card = document.createElement('div');
+    card.className = 'agent-card';
+    card.id = 'agent-' + a.name;
+    card.innerHTML = `
+      <div class="agent-card-header">
+        <span class="agent-icon">${a.icon}</span>
+        <span class="agent-name">${a.label}</span>
+        <span class="agent-badge waiting" id="badge-${a.name}">等待</span>
+      </div>`;
+    body.appendChild(card);
+  }
+
+  // Section list under GeneratorAgent
+  const sections = SECTION_DEFS[docType] || [];
+  const genCard = document.getElementById('agent-GeneratorAgent');
+  const sectionList = document.createElement('div');
+  sectionList.className = 'section-list';
+  sectionList.id = 'sectionList';
+  for (const s of sections) {
+    const row = document.createElement('div');
+    row.className = 'section-row';
+    row.id = 'section-' + s.id;
+    row.innerHTML = `<span class="section-name">${s.n}</span><span class="section-status" id="sstatus-${s.id}">—</span><span class="section-score" id="sscore-${s.id}"></span>`;
+    sectionList.appendChild(row);
+  }
+  genCard.appendChild(sectionList);
+}
+
+function updateAgentCard(name, status, log, result) {
+  const badge = document.getElementById('badge-' + name);
+  if (!badge) return;
+
+  const labels = { waiting:'等待', running:'运行中', done:'完成', skip:'跳过', error:'错误' };
+  badge.textContent = labels[status] || status;
+  badge.className = 'agent-badge ' + status;
+
+  const card = document.getElementById('agent-' + name);
+  if (!card) return;
+
+  // Update log
+  if (log) {
+    let logEl = card.querySelector('.agent-log');
+    if (!logEl) { logEl = document.createElement('div'); logEl.className = 'agent-log'; card.appendChild(logEl); }
+    logEl.textContent = log;
+  }
+
+  // Update result
+  if (result) {
+    let resEl = card.querySelector('.agent-result');
+    if (!resEl) { resEl = document.createElement('div'); resEl.className = 'agent-result'; card.appendChild(resEl); }
+    resEl.innerHTML = '';
+    if (result.recommended) {
+      const d = document.createElement('div');
+      d.className = 'agent-result-item highlight';
+      d.textContent = '推荐：' + result.recommended;
+      resEl.appendChild(d);
+    }
+    if (result.candidates?.length) {
+      result.candidates.forEach((t, i) => {
+        const d = document.createElement('div');
+        d.className = 'agent-result-item';
+        d.textContent = `${i+1}. ${t}`;
+        resEl.appendChild(d);
+      });
+    }
+    if (result.count !== undefined) {
+      const d = document.createElement('div');
+      d.className = 'agent-result-item highlight';
+      d.textContent = `找到 ${result.count} 篇文献`;
+      resEl.appendChild(d);
+    }
+    if (result.preview?.length) {
+      result.preview.forEach(t => {
+        if (!t) return;
+        const d = document.createElement('div');
+        d.className = 'agent-result-item';
+        d.textContent = '· ' + t.slice(0, 40) + (t.length > 40 ? '...' : '');
+        resEl.appendChild(d);
+      });
+    }
+  }
+
+  document.getElementById('missionBody').scrollTop = 9999;
+}
+
+function updateSection(id, status, score) {
+  const statusEl = document.getElementById('sstatus-' + id);
+  const scoreEl  = document.getElementById('sscore-' + id);
+  if (!statusEl) return;
+
+  const labels = { generating:'生成中', reviewing:'评审中', rewriting:'重写中', scored:'完成' };
+  statusEl.textContent = labels[status] || status;
+  statusEl.className = 'section-status ' + status;
+
+  if (score !== null && score !== undefined) {
+    scoreEl.textContent = score + '/10';
+    scoreEl.className = 'section-score ' + (score >= 8 ? 'high' : score >= 6 ? 'mid' : 'low');
+  }
+
+  // Mark GeneratorAgent as running
+  const badge = document.getElementById('badge-GeneratorAgent');
+  if (badge && badge.textContent === '等待') {
+    badge.textContent = '运行中';
+    badge.className = 'agent-badge running';
+  }
+}
+
+// ── SSE Event Handler ──────────────────────────────────────────
+function handleSSEEvent(event, data) {
+  switch(event) {
+    case 'phase':
+      setStatus(`Phase ${data.phase}: ${data.message}`);
+      break;
+
+    case 'agent':
+      updateAgentCard(data.name, data.status, data.log, data.result);
+      break;
+
+    case 'title':
+      if (data.title) {
+        const titleInput = document.querySelector('.form-input');
+        if (titleInput) titleInput.value = data.title;
+      }
+      break;
+
+    case 'progress':
+      if (data.sectionId !== '__all__') {
+        updateSection(data.sectionId, data.status, data.score);
+      }
+      break;
+
+    case 'done':
+      state.generatedContent = data.content;
+      state.generatedTitle = data.title;
+      state.isGenerating = false;
+
+      // Update mission control
+      updateAgentCard('GeneratorAgent', 'done', `生成完成，平均分 ${data.avgScore}/10`, null);
+      document.getElementById('avgScoreEl').textContent = data.avgScore;
+      document.getElementById('missionFooter').style.display = 'block';
+      document.getElementById('panelStatus').textContent = '生成完成';
+
+      // Show result in left panel
+      showResult(data.content, data.title, data.wordCount, data.avgScore);
+      break;
+
+    case 'error':
+      setStatus('错误: ' + data.message);
+      addAIMessage('❌ 生成出错：' + data.message);
+      state.isGenerating = false;
+      break;
+  }
+}
+
+// ── Result ─────────────────────────────────────────────────────
+function showResult(content, title, wordCount, avgScore) {
+  document.getElementById('chatView').style.display = 'none';
+  document.getElementById('resultView').style.display = 'flex';
+  document.getElementById('topbarTitle').textContent = title || '课题文档';
+  document.getElementById('topbarActions').style.display = 'flex';
+  document.getElementById('resultDoc').textContent = content;
+  document.getElementById('resultStatus').textContent =
+    `${title} · ${wordCount} 字 · 平均质量分 ${avgScore}/10`;
+}
+
+async function exportWord() {
+  if (!state.generatedContent) return;
+  try {
+    const res = await fetch('/api/export/word', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: state.generatedContent,
+        title: state.generatedTitle,
+        docType: state.params?.docType,
+        params: state.params,
+      }),
+    });
+    if (!res.ok) throw new Error('导出失败');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (state.generatedTitle || '课题文档') + '.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    alert('导出失败: ' + e.message);
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function setStatus(text) {
+  document.getElementById('statusBar').textContent = text;
+}
+
+function startNew() {
+  state.chatHistory = [];
+  state.params = null;
+  state.isGenerating = false;
+  state.generatedContent = null;
+  state.generatedTitle = null;
+
+  document.getElementById('chatView').style.display = 'flex';
+  document.getElementById('resultView').style.display = 'none';
+  document.getElementById('topbarTitle').textContent = '选题顾问';
+  document.getElementById('topbarActions').style.display = 'none';
+  document.getElementById('chatArea').innerHTML = '';
+  document.getElementById('formPanel').style.display = 'flex';
+  document.getElementById('missionPanel').style.display = 'none';
+  document.getElementById('panelTitle').textContent = '智能表单';
+  document.getElementById('panelStatus').textContent = '等待确认选题';
+  document.getElementById('formBody').innerHTML = '<div style="opacity:.3;font-size:12px;text-align:center;padding:40px 0">与 AI 顾问确认选题后<br>表单将自动填充</div>';
+  document.getElementById('formFooter').style.display = 'none';
+  setStatus('就绪');
+
+  addAIMessage('你好！我是课题 AI 顾问。\n\n告诉我你的学科和教学中遇到的问题，我来帮你找到合适的研究方向。\n\n比如："我教初中数学，想研究大单元教学"');
+}
+</script>
+</body>
+</html>
