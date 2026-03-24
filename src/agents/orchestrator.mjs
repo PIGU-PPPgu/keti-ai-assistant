@@ -180,6 +180,12 @@ export async function executeGeneration(sessionId, withReview = false, onEvent) 
     );
   }
 
+  let projectId = null;
+  if (session.userId && session.docType === 'shenbao') {
+    const { createProject } = await import('../db/index.mjs');
+    projectId = createProject(session.userId, finalParams.title || generated.title, finalParams);
+  }
+
   session.state = STATES.DONE;
   upsertSession(sessionId, session);
 
@@ -192,6 +198,7 @@ export async function executeGeneration(sessionId, withReview = false, onEvent) 
     literatureSource: literatureResult?.source ?? null,
     historyId,
     placeholders: generated.placeholders ?? [],
+    projectId,
   });
 }
 

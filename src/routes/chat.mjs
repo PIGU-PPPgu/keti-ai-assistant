@@ -177,4 +177,83 @@ router.post('/discuss', async (req, res) => {
   res.json({ reply: cleanReply, params, confirmed: !!params });
 });
 
+// 【第2轮-功能】单章节重新生成
+router.post('/regenerate-section', async (req, res) => {
+  const { sectionName, sectionId, params, docType } = req.body;
+  if (!sectionName || !params) return res.status(400).json({ error: '缺少参数' });
+
+  try {
+    const { callAI, EXPERT_SYSTEM_PROMPT } = await import('../services/ai.mjs');
+    const prompt = `重新生成课题申报书的"${sectionName}"章节，要求更高质量、更具体、更有深度。
+学科=${params.subject}，学段=${params.grade}，方向=${params.direction}，级别=${params.level}，课题名=${params.title || ''}。
+直接输出章节内容，不要任何说明。`;
+
+    const content = await callAI(EXPERT_SYSTEM_PROMPT, prompt, { maxTokens: 2000, temperature: 0.9 });
+    res.json({ content, sectionId, sectionName });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Project routes ───────────────────────────────────────────────
+
+import { authMiddleware } from '../services/auth.mjs';
+import { getProjectsByUser, getProject } from '../db/index.mjs';
+
+router.get('/projects', authMiddleware, (req, res) => {
+  const projects = getProjectsByUser(req.userId);
+  res.json({ success: true, projects });
+});
+
+router.get('/projects/:id', authMiddleware, (req, res) => {
+  const project = getProject(parseInt(req.params.id), req.userId);
+  if (!project) return res.status(404).json({ error: '项目不存在' });
+  res.json({ success: true, project });
+});
+
+router.post('/projects/:id/generate', authMiddleware, async (req, res) => {
+  const project = getProject(parseInt(req.params.id), req.userId);
+  if (!project) return res.status(404).json({ error: '项目不存在' });
+  const { docType, extraParams = {} } = req.body;
+  if (!docType) return res.status(400).json({ error: '缺少 docType' });
+  const baseParams = JSON.parse(project.params || '{}');
+  const params = { ...baseParams, title: project.title, level: project.level, subject: project.subject, grade: project.grade, direction: project.direction, ...extraParams };
+  const sessionId = 'proj_' + project.id + '_' + docType + '_' + Date.now();
+  const { upsertSession } = await import('../db/index.mjs');
+  upsertSession(sessionId, { id: sessionId, userId: req.userId, state: 'generating', docType, collectedData: params, fieldIndex: 0 });
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  try {
+    const { executeGeneration } = await import('../agents/orchestrator.mjs');
+    await executeGeneration(sessionId, false, send);
+  } catch (e) {
+    send('error', { message: e.message });
+  } finally {
+    res.end();
+  }
+});
+
+// ── Pipeline route ───────────────────────────────────────────────
+
+router.post('/pipeline/start', async (req, res) => {
+  const { params } = req.body;
+  if (!params || !params.level || !params.subject || !params.grade) return res.status(400).json({ error: '缺少必要参数 (level/subject/grade)' });
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  try {
+    const { executePipeline } = await import('../agents/pipeline.mjs');
+    await executePipeline(params, req.userId ?? null, send);
+  } catch (e) {
+    send('error', { message: e.message });
+  } finally {
+    res.end();
+  }
+});
+
 export default router;

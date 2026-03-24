@@ -56,6 +56,18 @@ function initSchema() {
 
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_history_user ON history(user_id);
+
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id),
+      title TEXT NOT NULL,
+      level TEXT, subject TEXT, grade TEXT, direction TEXT,
+      params TEXT DEFAULT "{}",
+      status TEXT DEFAULT "active",
+      created_at INTEGER DEFAULT (unixepoch()),
+      updated_at INTEGER DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id);
   `);
 }
 
@@ -150,4 +162,25 @@ export function getHistoryItem(id, userId) {
   return getDb().prepare(
     'SELECT * FROM history WHERE id = ? AND user_id = ?'
   ).get(id, userId);
+}
+
+// ---- Projects ----
+
+export function createProject(userId, title, params = {}) {
+  const { level, subject, grade, direction } = params;
+  const stmt = getDb().prepare(`INSERT INTO projects (user_id, title, level, subject, grade, direction, params) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  const result = stmt.run(userId, title, level ?? null, subject ?? null, grade ?? null, direction ?? null, JSON.stringify(params));
+  return result.lastInsertRowid;
+}
+
+export function getProjectsByUser(userId) {
+  return getDb().prepare(`SELECT * FROM projects WHERE user_id = ? ORDER BY updated_at DESC`).all(userId);
+}
+
+export function getProject(projectId, userId) {
+  return getDb().prepare(`SELECT * FROM projects WHERE id = ? AND user_id = ?`).get(projectId, userId);
+}
+
+export function updateProjectStatus(projectId, status) {
+  getDb().prepare(`UPDATE projects SET status = ?, updated_at = unixepoch() WHERE id = ?`).run(status, projectId);
 }
