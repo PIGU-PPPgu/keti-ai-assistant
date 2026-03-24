@@ -224,13 +224,21 @@ function parseMarkdown(markdown) {
 
 function parseInline(text) {
   const runs = [];
-  // 处理粗体 **text**
-  const parts = text.split(/(\*\*[^*]+\*\*)/);
-  for (const part of parts) {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      runs.push(new TextRun({ text: part.slice(2, -2), bold: true, font: { name: 'SimSun' }, size: 24 }));
+  // 先按占位符分割，再处理粗体
+  const placeholderParts = text.split(/(【待填写：[^】]+】)/);
+  for (const part of placeholderParts) {
+    if (/^【待填写：[^】]+】$/.test(part)) {
+      runs.push(new TextRun({ text: part, font: { name: 'SimSun' }, size: 24, color: 'FF0000', bold: true }));
     } else if (part) {
-      runs.push(new TextRun({ text: part, font: { name: 'SimSun' }, size: 24 }));
+      // 处理粗体 **text**
+      const boldParts = part.split(/(\*\*[^*]+\*\*)/);
+      for (const bp of boldParts) {
+        if (bp.startsWith('**') && bp.endsWith('**')) {
+          runs.push(new TextRun({ text: bp.slice(2, -2), bold: true, font: { name: 'SimSun' }, size: 24 }));
+        } else if (bp) {
+          runs.push(new TextRun({ text: bp, font: { name: 'SimSun' }, size: 24 }));
+        }
+      }
     }
   }
   return runs.length ? runs : [new TextRun({ text, font: { name: 'SimSun' }, size: 24 })];

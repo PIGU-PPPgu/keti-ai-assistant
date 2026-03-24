@@ -153,8 +153,8 @@ export async function executeGeneration(sessionId, withReview = false, onEvent) 
     docType: session.docType,
     params: finalParams,
     literatureContext: literatureResult?.summary ?? null,
-    onProgress: (sectionId, status, score) => {
-      emit('progress', { sectionId, status, score });
+    onProgress: (sectionId, status, score, content) => {
+      emit('progress', { sectionId, status, score, content: content ? content.slice(0, 500) : null });
     },
   });
 
@@ -185,12 +185,13 @@ export async function executeGeneration(sessionId, withReview = false, onEvent) 
 
   emit('done', {
     content: finalContent,
-    title: generated.title,
+    title: finalParams.title || generated.title,
     wordCount: finalContent.length,
     sections: generated.sections,
     avgScore: generated.avgScore,
     literatureSource: literatureResult?.source ?? null,
     historyId,
+    placeholders: generated.placeholders ?? [],
   });
 }
 
