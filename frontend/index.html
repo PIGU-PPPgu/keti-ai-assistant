@@ -6,6 +6,8 @@
 <title>课题 AI 助手</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: false, theme: "default" });</script>
 <style>
 :root {
   --red: #E63946; --blue: #457B9D; --amber: #F4A261;
@@ -149,6 +151,9 @@ input:checked + .toggle-slider:before { transform: translateX(14px); }
 .section-score.high { color: var(--green); }
 .section-score.mid  { color: var(--amber); }
 .section-score.low  { color: var(--red); }
+.regen-btn { background: none; border: 1px solid #333; color: #888; font-size: 10px; padding: 1px 5px; cursor: pointer; border-radius: 3px; margin-left: 4px; }
+.regen-btn:hover { color: var(--amber); border-color: var(--amber); }
+.regen-btn:disabled { opacity: .3; cursor: not-allowed; }
 
 /* Score summary */
 .score-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
@@ -164,6 +169,20 @@ input:checked + .toggle-slider:before { transform: translateX(14px); }
 /* Generating spinner */
 .gen-spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* 【第2轮-交互】内联编辑 */
+.result-doc[contenteditable="true"] { outline: none; }
+.result-doc[contenteditable="true"]:focus { background: #1e1e1e; }
+.edit-hint { font-size: 10px; opacity: .3; padding: 4px 16px; }
+
+/* 【第2轮-市场】多Agent对比卡片 */
+.advantage-card { margin: 12px 16px; border: 1px solid #2a2a2a; padding: 12px; background: #1a1a1a; }
+.advantage-title { font-size: 11px; font-weight: 600; color: var(--amber); margin-bottom: 8px; }
+.advantage-row { display: flex; gap: 8px; margin-bottom: 4px; font-size: 10px; }
+.advantage-label { opacity: .4; width: 60px; flex-shrink: 0; }
+.advantage-val { opacity: .8; }
+.advantage-val.good { color: var(--green); }
+.advantage-val.bad { color: var(--red); opacity: .6; }
 </style>
 </head>
 <body>
@@ -195,6 +214,7 @@ input:checked + .toggle-slider:before { transform: translateX(14px); }
       <span class="topbar-title" id="topbarTitle">选题顾问</span>
       <div class="topbar-actions" id="topbarActions" style="display:none">
         <button class="btn" onclick="startNew()">新建</button>
+        <button class="btn" id="editBtn" onclick="toggleEdit()">编辑</button>
         <button class="btn primary" onclick="exportWord()">导出 Word</button>
       </div>
     </div>
@@ -217,6 +237,7 @@ input:checked + .toggle-slider:before { transform: translateX(14px); }
       <div class="result-view">
         <pre class="result-doc" id="resultDoc"></pre>
       </div>
+      <div class="edit-hint" id="editHint" style="display:none">✏️ 编辑模式 — 直接点击文字修改，完成后点"编辑"退出</div>
       <div class="status-bar" id="resultStatus"></div>
     </div>
   </div>
@@ -255,7 +276,15 @@ input:checked + .toggle-slider:before { transform: translateX(14px); }
       <div class="panel-footer" id="missionFooter" style="display:none">
         <div class="score-summary">
           <div class="score-big" id="avgScoreEl">—</div>
-          <div><div class="score-label">平均质量分</div><div style="font-size:10px;opacity:.3">Critic 评审</div></div>
+          <div><div class="score-label">平均质量分</div><div style="font-size:10px;opacity:.3">Critic Agent 评审</div></div>
+        </div>
+        <!-- 【第2轮-市场】多Agent对比说明 -->
+        <div class="advantage-card">
+          <div class="advantage-title">⚡ 多 Agent 优势</div>
+          <div class="advantage-row"><span class="advantage-label">文献引用</span><span class="advantage-val good">✓ 真实搜索 8+ 篇</span></div>
+          <div class="advantage-row"><span class="advantage-label">质量把控</span><span class="advantage-val good">✓ Critic 逐章评审</span></div>
+          <div class="advantage-row"><span class="advantage-label">章节一致</span><span class="advantage-val good">✓ 上下文传递</span></div>
+          <div class="advantage-row"><span class="advantage-label">单次 AI</span><span class="advantage-val bad">✗ 无以上能力</span></div>
         </div>
         <button class="btn-generate" onclick="exportWord()">导出 Word 文档</button>
       </div>
@@ -282,9 +311,39 @@ const SECTION_DEFS = {
   jieti:   [{id:'summary',n:'工作总结'},{id:'results',n:'研究成果'},{id:'innovation',n:'创新点'},{id:'value',n:'应用价值'},{id:'issues',n:'问题建议'},{id:'list',n:'成果清单'},{id:'budget',n:'经费决算'},{id:'references',n:'参考文献'}],
 };
 
+// ── Quick Templates ────────────────────────────────────────────
+const QUICK_TEMPLATES = [
+  { label: '初中数学·大单元教学', text: '我教初中数学，想研究大单元教学设计，区级课题' },
+  { label: '小学语文·阅读素养', text: '我教小学语文，想研究整本书阅读与阅读素养培养，校级课题' },
+  { label: '高中物理·实验探究', text: '我教高中物理，想研究项目式学习与实验探究能力，市级课题' },
+  { label: '初中英语·核心素养', text: '我教初中英语，想研究基于核心素养的单元整体教学，区级课题' },
+  { label: '小学数学·思维可视化', text: '我教小学数学，想研究思维导图在数学教学中的应用，校级课题' },
+];
+
+function insertTemplate(text) {
+  const input = document.getElementById('chatInput');
+  input.value = text;
+  input.focus();
+}
+
 // ── Init ───────────────────────────────────────────────────────
 window.onload = () => {
-  addAIMessage('你好！我是课题 AI 顾问。\n\n告诉我你的学科和教学中遇到的问题，我来帮你找到合适的研究方向。\n\n比如："我教初中数学，想研究大单元教学"');
+  // 【第3轮-市场】欢迎页价值主张
+  addAIMessage('你好！我是课题 AI 顾问。\n\n我会用 **4个专业 Agent** 协作帮你生成课题申报书：\n• 🔍 文献 Agent — 真实搜索学术文献\n• ✍️ 生成 Agent — 逐章专业撰写\n• 🎯 评审 Agent — Critic 循环质量把控\n• ✨ 润色 Agent — 去AI化处理\n\n告诉我你的学科和想研究的方向，我来帮你确认选题。');
+
+  // 【第3轮-交互】快速选题模板
+  const area = document.getElementById('chatArea');
+  const tplDiv = document.createElement('div');
+  tplDiv.style.cssText = 'padding: 8px 0; display: flex; flex-wrap: wrap; gap: 6px;';
+  QUICK_TEMPLATES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.style.cssText = 'font-size: 11px; padding: 4px 8px; opacity: .7;';
+    btn.textContent = t.label;
+    btn.onclick = () => insertTemplate(t.text);
+    tplDiv.appendChild(btn);
+  });
+  area.appendChild(tplDiv);
 };
 
 // ── Chat ───────────────────────────────────────────────────────
@@ -465,6 +524,9 @@ async function startGeneration() {
   if (state.isGenerating || !state.params) return;
   state.isGenerating = true;
 
+  const btn = document.getElementById('generateBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
+
   const withReview = document.getElementById('withReview').checked;
   const { docType, ...params } = state.params;
 
@@ -517,6 +579,12 @@ async function startGeneration() {
     setStatus('生成失败: ' + e.message);
     addAIMessage('❌ 生成失败：' + e.message);
     state.isGenerating = false;
+  } finally {
+    // 确保无论如何都重置生成状态
+    if (state.isGenerating) {
+      state.isGenerating = false;
+      setStatus('就绪');
+    }
   }
 }
 
@@ -556,7 +624,7 @@ function initMissionControl(docType) {
     const row = document.createElement('div');
     row.className = 'section-row';
     row.id = 'section-' + s.id;
-    row.innerHTML = `<span class="section-name">${s.n}</span><span class="section-status" id="sstatus-${s.id}">—</span><span class="section-score" id="sscore-${s.id}"></span>`;
+    row.innerHTML = `<span class="section-name">${s.n}</span><span class="section-status" id="sstatus-${s.id}">—</span><span class="section-score" id="sscore-${s.id}"></span><button class="regen-btn" id="regen-${s.id}" onclick="regenerateSection('${s.id}','${s.n}')" style="display:none" title="重新生成此章节">↺</button>`;
     sectionList.appendChild(row);
   }
   genCard.appendChild(sectionList);
@@ -619,18 +687,43 @@ function updateAgentCard(name, status, log, result) {
   document.getElementById('missionBody').scrollTop = 9999;
 }
 
-function updateSection(id, status, score) {
+function updateSection(id, status, score, content) {
   const statusEl = document.getElementById('sstatus-' + id);
   const scoreEl  = document.getElementById('sscore-' + id);
   if (!statusEl) return;
 
-  const labels = { generating:'生成中', reviewing:'评审中', rewriting:'重写中', scored:'完成' };
+  const labels = { generating:'生成中', reviewing:'评审中', rewriting:'重写中', scored:'完成', done:'完成' };
   statusEl.textContent = labels[status] || status;
-  statusEl.className = 'section-status ' + status;
+  statusEl.className = 'section-status ' + (status === 'done' ? 'scored' : status);
 
   if (score !== null && score !== undefined) {
     scoreEl.textContent = score + '/10';
     scoreEl.className = 'section-score ' + (score >= 8 ? 'high' : score >= 6 ? 'mid' : 'low');
+  }
+
+  // 【第1轮-交互】章节完成后存储内容，支持点击展开
+  if (content) {
+    const row = document.getElementById('section-' + id);
+    if (row) {
+      row.style.cursor = 'pointer';
+      row.title = '点击预览内容';
+      row._content = content;
+      row.onclick = () => {
+        const existing = row.nextElementSibling;
+        if (existing && existing.classList.contains('section-preview')) {
+          existing.remove();
+          return;
+        }
+        const preview = document.createElement('div');
+        preview.className = 'section-preview';
+        preview.style.cssText = 'padding:8px 10px;font-size:10px;opacity:.6;border-top:1px solid #1e1e1e;line-height:1.6;white-space:pre-wrap;max-height:120px;overflow-y:auto;background:#1a1a1a';
+        preview.textContent = content.slice(0, 400) + (content.length > 400 ? '...' : '');
+        row.after(preview);
+      };
+      // 【第3轮-功能】显示重新生成按钮
+      const regenBtn = document.getElementById('regen-' + id);
+      if (regenBtn) regenBtn.style.display = 'inline-block';
+    }
   }
 
   // Mark GeneratorAgent as running
@@ -654,30 +747,40 @@ function handleSSEEvent(event, data) {
 
     case 'title':
       if (data.title) {
+        state.generatedTitle = data.title;
         const titleInput = document.querySelector('.form-input');
         if (titleInput) titleInput.value = data.title;
+        // 【第1轮-交互】标题确认后立即显示在顶栏
+        document.getElementById('topbarTitle').textContent = data.title;
       }
       break;
 
     case 'progress':
       if (data.sectionId !== '__all__') {
-        updateSection(data.sectionId, data.status, data.score);
+        updateSection(data.sectionId, data.status, data.score, data.content);
+        // 【第1轮-功能】章节完成时实时追加到预览区
+        if (data.status === 'done' && data.content) {
+          appendSectionPreview(data.sectionId, data.content);
+        }
       }
       break;
 
     case 'done':
       state.generatedContent = data.content;
-      state.generatedTitle = data.title;
+      state.generatedTitle = data.title || state.generatedTitle;
       state.isGenerating = false;
 
       // Update mission control
       updateAgentCard('GeneratorAgent', 'done', `生成完成，平均分 ${data.avgScore}/10`, null);
       document.getElementById('avgScoreEl').textContent = data.avgScore;
+      // 【第1轮-市场】质量分颜色
+      const scoreEl = document.getElementById('avgScoreEl');
+      scoreEl.style.color = data.avgScore >= 8 ? 'var(--green)' : data.avgScore >= 6 ? 'var(--amber)' : 'var(--red)';
       document.getElementById('missionFooter').style.display = 'block';
       document.getElementById('panelStatus').textContent = '生成完成';
 
-      // Show result in left panel
-      showResult(data.content, data.title, data.wordCount, data.avgScore);
+      // Show result in left panel (用完整内容替换预览)
+      showResult(data.content, state.generatedTitle, data.wordCount, data.avgScore);
       break;
 
     case 'error':
@@ -689,14 +792,45 @@ function handleSSEEvent(event, data) {
 }
 
 // ── Result ─────────────────────────────────────────────────────
+// 【第1轮-功能】实时追加章节预览
+function appendSectionPreview(sectionId, content) {
+  // 切换到预览模式（如果还在 chat 视图）
+  const chatView = document.getElementById('chatView');
+  const resultView = document.getElementById('resultView');
+  if (chatView.style.display !== 'none') {
+    chatView.style.display = 'none';
+    resultView.style.display = 'flex';
+    document.getElementById('topbarActions').style.display = 'flex';
+    document.getElementById('resultDoc').textContent = '';
+  }
+  // 追加章节内容
+  const doc = document.getElementById('resultDoc');
+  doc.textContent += (doc.textContent ? '\n\n---\n\n' : '') + content;
+  doc.parentElement.scrollTop = doc.parentElement.scrollHeight;
+  setStatus(`正在生成中... 已完成 ${doc.textContent.length} 字`);
+}
+
+function renderContentWithMermaid(content) {
+  const parts = content.split(/(```mermaid\n[\s\S]+?\n```)/g);
+  return parts.map(part => {
+    const m = part.match(/^```mermaid\n([\s\S]+?)\n```$/);
+    if (m) return `<div class="mermaid">${m[1]}</div>`;
+    return part.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }).join('');
+}
+
 function showResult(content, title, wordCount, avgScore) {
   document.getElementById('chatView').style.display = 'none';
   document.getElementById('resultView').style.display = 'flex';
   document.getElementById('topbarTitle').textContent = title || '课题文档';
   document.getElementById('topbarActions').style.display = 'flex';
-  document.getElementById('resultDoc').textContent = content;
-  document.getElementById('resultStatus').textContent =
-    `${title} · ${wordCount} 字 · 平均质量分 ${avgScore}/10`;
+  const resultDoc = document.getElementById('resultDoc');
+  resultDoc.innerHTML = renderContentWithMermaid(content);
+  if (typeof mermaid !== 'undefined') mermaid.run({ nodes: resultDoc.querySelectorAll('.mermaid') });
+  // 【第1轮-市场】质量分展示更醒目
+  const scoreColor = avgScore >= 8 ? '#2D6A4F' : avgScore >= 6 ? '#F4A261' : '#E63946';
+  document.getElementById('resultStatus').innerHTML =
+    `${title || '课题文档'} · <strong>${wordCount}</strong> 字 · 质量分 <strong style="color:${scoreColor}">${avgScore}/10</strong>`;
 }
 
 async function exportWord() {
@@ -730,6 +864,55 @@ function setStatus(text) {
   document.getElementById('statusBar').textContent = text;
 }
 
+// 【第2轮-交互】内联编辑切换
+function toggleEdit() {
+  const doc = document.getElementById('resultDoc');
+  const btn = document.getElementById('editBtn');
+  const hint = document.getElementById('editHint');
+  const isEditing = doc.contentEditable === 'true';
+  if (isEditing) {
+    doc.contentEditable = 'false';
+    btn.textContent = '编辑';
+    hint.style.display = 'none';
+    // 同步编辑后的内容到 state
+    state.generatedContent = doc.textContent;
+  } else {
+    doc.contentEditable = 'true';
+    doc.focus();
+    btn.textContent = '完成';
+    hint.style.display = 'block';
+  }
+}
+
+// 【第3轮-功能】单章节重新生成
+async function regenerateSection(sectionId, sectionName) {
+  if (!state.params) return;
+  const btn = document.getElementById('regen-' + sectionId);
+  if (btn) { btn.textContent = '...'; btn.disabled = true; }
+
+  try {
+    const res = await fetch('/api/chat/regenerate-section', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sectionId, sectionName, params: state.params, docType: state.params.docType }),
+    });
+    const data = await res.json();
+    if (data.content) {
+      // 更新预览
+      const row = document.getElementById('section-' + sectionId);
+      if (row) row._content = data.content;
+      // 更新状态
+      const statusEl = document.getElementById('sstatus-' + sectionId);
+      if (statusEl) { statusEl.textContent = '已重生成'; statusEl.className = 'section-status scored'; }
+      addAIMessage(`✅ "${sectionName}" 已重新生成，点击章节行可预览新内容。`);
+    }
+  } catch(e) {
+    addAIMessage('❌ 重新生成失败: ' + e.message);
+  } finally {
+    if (btn) { btn.textContent = '↺'; btn.disabled = false; }
+  }
+}
+
 function startNew() {
   state.chatHistory = [];
   state.params = null;
@@ -750,7 +933,7 @@ function startNew() {
   document.getElementById('formFooter').style.display = 'none';
   setStatus('就绪');
 
-  addAIMessage('你好！我是课题 AI 顾问。\n\n告诉我你的学科和教学中遇到的问题，我来帮你找到合适的研究方向。\n\n比如："我教初中数学，想研究大单元教学"');
+  addAIMessage('你好！我是课题 AI 顾问。\n\n我会用 **4个专业 Agent** 协作帮你生成课题申报书：\n• 🔍 文献 Agent — 真实搜索学术文献\n• ✍️ 生成 Agent — 逐章专业撰写\n• 🎯 评审 Agent — Critic 循环质量把控\n• ✨ 润色 Agent — 去AI化处理\n\n告诉我你的学科和想研究的方向，我来帮你确认选题。');
 }
 </script>
 </body>
