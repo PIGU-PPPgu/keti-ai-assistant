@@ -16,6 +16,12 @@ const REVIEWER_SYSTEM_PROMPT = `你是一位资深的语言润色专家，专门
 5. 适当加入教师视角的个人观察和思考
 6. 保持原文的核心内容和结构不变
 
+【严格要求】：
+- 只输出润色后的正文内容，不要输出任何分析说明、修改思路、前言、后记
+- 不要输出"你好！"、"以下是润色后的版本："、"修改说明："、"润色思路："等任何说明性文字
+- 不要解释你做了什么修改，直接给出修改后的文本
+- 直接从正文内容开始输出，不要有任何开场白
+
 注意：不要改变参考文献格式，不要删减重要内容。`;
 
 export class ReviewerAgent extends BaseAgent {
@@ -35,13 +41,29 @@ export class ReviewerAgent extends BaseAgent {
     for (const chunk of chunks) {
       const result = await callAI(
         REVIEWER_SYSTEM_PROMPT,
-        `请对以下学术文本进行润色，去除AI生成痕迹，使其更像人类写作：\n\n${chunk}`,
+        `请对以下学术文本进行润色，去除AI生成痕迹，使其更像人类写作。直接输出润色后的正文，不要任何说明或解释：\n\n${chunk}`,
         { maxTokens: 4000, temperature: 0.8 }
       );
-      polished.push(result);
+      polished.push(this.#stripPreamble(result));
     }
 
     return { content: polished.join('\n\n') };
+  }
+
+  // 过滤模型输出的前缀说明性文字
+  #stripPreamble(text) {
+    const lines = text.split('\n');
+    const contentStart = lines.findIndex(line => {
+      const t = line.trim();
+      // 找到第一个以 # 开头或者实质内容行（非说明性前缀）
+      if (t.startsWith('#')) return true;
+      if (t.length > 20 && !t.match(/^(你好|以下是|润色|修改|说明|注意|根据|下面|这是|我已|我对|本文|原文)/)) return true;
+      return false;
+    });
+    if (contentStart > 0 && contentStart < 5) {
+      return lines.slice(contentStart).join('\n').trim();
+    }
+    return text;
   }
 
   #splitContent(content, maxChars = 3000) {

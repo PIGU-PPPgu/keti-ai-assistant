@@ -31,6 +31,9 @@ export async function callAI(systemPrompt, userPrompt, options = {}) {
     thinking: { type: 'disabled' },
   };
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90000); // 90s 超时
+
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -38,18 +41,14 @@ export async function callAI(systemPrompt, userPrompt, options = {}) {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '10');
     const wait = (retryAfter || 10) * 1000;
-    console.warn(`Rate limited (tier=${tier}), retrying after ${wait}ms...`);
+    console.warn(`Rate limited on callAI, retrying after ${wait}ms...`);
     await new Promise(r => setTimeout(r, wait));
-    return callAIWithModel(systemPrompt, userPrompt, tier, options);
-  }
-  if (res.status === 429) {
-    console.warn('Rate limited on callAI, retrying after 10s...');
-    await new Promise(r => setTimeout(r, 10000));
     return callAI(systemPrompt, userPrompt, options);
   }
   if (!res.ok) {
@@ -92,6 +91,9 @@ export async function callAIWithModel(systemPrompt, userPrompt, tier = 'main', o
   const fastModels = { glm: 'glm-4-flash', deepseek: 'deepseek-chat', openai: 'gpt-4o-mini' };
   const actualModel = tier === 'fast' ? (fastModels[provider] ?? model) : model;
 
+  const controller2 = new AbortController();
+  const timeout2 = setTimeout(() => controller2.abort(), 90000);
+
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
@@ -105,7 +107,8 @@ export async function callAIWithModel(systemPrompt, userPrompt, tier = 'main', o
       temperature: options.temperature ?? temperature,
       thinking: { type: 'disabled' },
     }),
-  });
+    signal: controller2.signal,
+  }).finally(() => clearTimeout(timeout2));
 
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '10');
