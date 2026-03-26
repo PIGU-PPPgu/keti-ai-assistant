@@ -593,6 +593,7 @@ const agentDefs = [
   { name: 'TitleAgent',     icon: '🎯', label: '标题生成' },
   { name: 'LiteratureAgent',icon: '📚', label: '文献搜索' },
   { name: 'GeneratorAgent', icon: '✍️', label: '章节生成' },
+  { name: 'OptimizerAgent', icon: '🔄', label: '循环优化' },
   { name: 'ReviewerAgent',  icon: '🔬', label: '润色去AI化' },
 ];
 
@@ -755,6 +756,10 @@ function handleSSEEvent(event, data) {
       }
       break;
 
+    case 'optimize':
+      handleOptimizeEvent(data);
+      break;
+
     case 'progress':
       if (data.sectionId !== '__all__') {
         updateSection(data.sectionId, data.status, data.score, data.content);
@@ -777,9 +782,15 @@ function handleSSEEvent(event, data) {
       // Update mission control
       updateAgentCard('GeneratorAgent', 'done', `生成完成，平均分 ${data.avgScore}/10`, null);
       document.getElementById('avgScoreEl').textContent = data.avgScore;
-      // 【第1轮-市场】质量分颜色
+      // 质量分颜色
       const scoreEl = document.getElementById('avgScoreEl');
       scoreEl.style.color = data.avgScore >= 8 ? 'var(--green)' : data.avgScore >= 6 ? 'var(--amber)' : 'var(--red)';
+      if (data.optimizeRounds) {
+        const sub = document.createElement('div');
+        sub.style.cssText = 'font-size:10px;opacity:.4;margin-top:2px';
+        sub.textContent = `经 ${data.optimizeRounds} 轮优化`;
+        scoreEl.parentElement.appendChild(sub);
+      }
       document.getElementById('missionFooter').style.display = 'block';
       document.getElementById('panelStatus').textContent = '生成完成';
 
@@ -917,8 +928,45 @@ async function regenerateSection(sectionId, sectionName) {
   }
 }
 
+// ── Optimizer 进度 ─────────────────────────────────────────────
+function handleOptimizeEvent(data) {
+  const card = document.getElementById('agent-OptimizerAgent');
+  if (!card) return;
+
+  if (data.event === 'scoring') {
+    let table = card.querySelector('.opt-score-table');
+    if (!table) {
+      table = document.createElement('div');
+      table.className = 'opt-score-table';
+      table.style.cssText = 'padding:6px 10px;font-size:10px;border-top:1px solid #1e1e1e;background:#1a1a1a';
+      card.appendChild(table);
+    }
+    table.innerHTML = `<div style="opacity:.4;margin-bottom:4px">第 ${data.round} 轮评分 · 综合 ${data.composite}/10</div>` +
+      data.sections.map(s => {
+        const color = s.composite >= 9 ? '#2D6A4F' : s.composite >= 7 ? '#F4A261' : '#E63946';
+        return `<div style="display:flex;gap:6px;margin-bottom:2px">
+          <span style="flex:1;opacity:.6">${s.name}</span>
+          <span style="color:${color};font-weight:600">${s.composite}</span>
+          <span style="opacity:.3">T${s.text} L${s.layout} D${s.diagram}</span>
+        </div>`;
+      }).join('');
+    document.getElementById('missionBody').scrollTop = 9999;
+  }
+
+  if (data.event === 'optimizing') {
+    let logEl = card.querySelector('.agent-log');
+    if (!logEl) { logEl = document.createElement('div'); logEl.className = 'agent-log'; card.appendChild(logEl); }
+    logEl.textContent = `第 ${data.round} 轮优化：${data.targets.map(t => `${t.name}(${t.composite})`).join('、')}`;
+  }
+
+  if (data.event === 'done') {
+    let logEl = card.querySelector('.agent-log');
+    if (!logEl) { logEl = document.createElement('div'); logEl.className = 'agent-log'; card.appendChild(logEl); }
+    logEl.textContent = `✅ ${data.reason || '优化完成'} · 最终 ${data.composite}/10`;
+  }
+}
+
 function startNew() {
-  state.chatHistory = [];
   state.params = null;
   state.isGenerating = false;
   state.generatedContent = null;

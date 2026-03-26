@@ -16,6 +16,7 @@ import { LiteratureAgent } from './literature.mjs';
 import { GeneratorAgent }  from './generator.mjs';
 import { ReviewerAgent }   from './reviewer.mjs';
 import { DiagramAgent }    from './diagram.mjs';
+import { OptimizerAgent }  from './optimizer.mjs';
 import { upsertSession, loadSession, saveHistory } from '../db/index.mjs';
 
 export const STATES = {
@@ -33,6 +34,7 @@ const literatureAgent = new LiteratureAgent();
 const generatorAgent = new GeneratorAgent();
 const reviewerAgent  = new ReviewerAgent();
 const diagramAgent   = new DiagramAgent();
+const optimizerAgent = new OptimizerAgent();
 
 const RESET_CMDS = new Set(['重新开始', '重置', 'reset', '/reset', '/new']);
 
@@ -160,13 +162,41 @@ export async function executeGeneration(sessionId, withReview = false, onEvent) 
     },
   });
 
-  // ── Phase 3: 可选润色 ───────────────────────────────────────────
-  let finalContent = generated.content;
+  // ── Phase 3: 循环优化（最多10轮）──────────────────────────────
+  emit('phase', { phase: 3, name: '优化', message: '多维评分循环优化中（最多10轮）...' });
+  emit('agent', { name: 'OptimizerAgent', status: 'running', log: '初始化评分函数...' });
 
+  const optimized = await optimizerAgent.run({
+    sections: generated.sections,
+    params: finalParams,
+    onRound: (event, data) => {
+      if (event === 'scoring') {
+        emit('optimize', { event: 'scoring', round: data.round, composite: data.composite, sections: data.sections });
+        emit('agent', { name: 'OptimizerAgent', status: 'running',
+          log: `第 ${data.round} 轮评分完成，综合分 ${data.composite}/10` });
+      } else if (event === 'optimizing') {
+        emit('optimize', { event: 'optimizing', round: data.round, targets: data.targets });
+        emit('agent', { name: 'OptimizerAgent', status: 'running',
+          log: `第 ${data.round} 轮优化：${data.targets.map(t => t.name).join('、')}` });
+      } else if (event === 'round_done') {
+        emit('optimize', { event: 'round_done', round: data.round, composite: data.composite, improved: data.improved });
+      } else if (event === 'done') {
+        emit('optimize', { event: 'done', round: data.round, composite: data.composite, reason: data.reason });
+        emit('agent', { name: 'OptimizerAgent', status: 'done',
+          log: `优化完成（${data.round} 轮），最终综合分 ${data.composite}/10` });
+      }
+    },
+  });
+
+  let finalContent = optimized.content;
+  emit('agent', { name: 'OptimizerAgent', status: 'done',
+    log: `${optimized.rounds} 轮优化完成，综合分 ${optimized.finalScore}/10` });
+
+  // ── Phase 4: 可选润色 ───────────────────────────────────────────
   if (withReview) {
     session.state = STATES.REVIEWING;
     upsertSession(sessionId, session);
-    emit('phase', { phase: 3, name: '润色', message: '正在进行去 AI 化润色...' });
+    emit('phase', { phase: 4, name: '润色', message: '正在进行去 AI 化润色...' });
     emit('agent', { name: 'ReviewerAgent', status: 'running' });
     const reviewed = await reviewerAgent.run({ content: finalContent });
     finalContent = reviewed.content;
@@ -195,8 +225,9 @@ export async function executeGeneration(sessionId, withReview = false, onEvent) 
     content: finalContent,
     title: finalParams.title || generated.title,
     wordCount: finalContent.length,
-    sections: generated.sections,
-    avgScore: generated.avgScore,
+    sections: optimized.sections.map(s => ({ id: s.id, name: s.name, score: s.scores?.composite ?? s.score })),
+    avgScore: optimized.finalScore,
+    optimizeRounds: optimized.rounds,
     literatureSource: literatureResult?.source ?? null,
     historyId,
     placeholders: generated.placeholders ?? [],
