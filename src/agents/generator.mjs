@@ -126,20 +126,19 @@ export class GeneratorAgent extends BaseAgent {
 
       finalSections.push({ id: section.id, name: section.name, content, score: critique.score });
 
-      // DiagramAgent：为特定章节生成 Mermaid 图
-      if (['framework', 'methodology', 'objectives'].includes(section.id)) {
-        try {
-          const { DiagramAgent } = await import('./diagram.mjs');
-          const diagramAgent = new DiagramAgent();
-          const diagram = await diagramAgent.run({ sectionId: section.id, content, params });
-          if (diagram.hasDiagram) {
-            content += `\n\n**📊 ${section.name}示意图**\n\n\`\`\`mermaid\n${diagram.mermaid}\n\`\`\``;
-            finalSections[finalSections.length - 1].content = content;
-            finalSections[finalSections.length - 1].diagram = diagram;
-            onProgress?.(section.id, 'diagram', null, content);
-          }
-        } catch (e) { /* 图生成失败不影响主流程 */ }
-      }
+      // DiagramAgent：每章节智能判断是否需要配图
+      try {
+        const { DiagramAgent } = await import('./diagram.mjs');
+        const diagramAgent = new DiagramAgent();
+        onProgress?.(section.id, 'diagram_checking', null);
+        const diagram = await diagramAgent.run({ sectionId: section.id, content, params });
+        if (diagram.hasDiagram) {
+          content += `\n\n**📊 ${diagram.caption || section.name + '示意图'}**\n\n\`\`\`mermaid\n${diagram.mermaid}\n\`\`\``;
+          finalSections[finalSections.length - 1].content = content;
+          finalSections[finalSections.length - 1].diagram = diagram;
+          onProgress?.(section.id, 'diagram_done', null, content);
+        }
+      } catch (e) { /* 图生成失败不影响主流程 */ }
 
       // 章节完成后立即推送内容（实时预览）
       onProgress?.(section.id, 'done', critique.score, content);

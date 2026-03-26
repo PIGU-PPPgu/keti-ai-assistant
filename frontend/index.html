@@ -692,7 +692,7 @@ function updateSection(id, status, score, content) {
   const scoreEl  = document.getElementById('sscore-' + id);
   if (!statusEl) return;
 
-  const labels = { generating:'生成中', reviewing:'评审中', rewriting:'重写中', scored:'完成', done:'完成' };
+  const labels = { generating:'生成中', reviewing:'评审中', rewriting:'重写中', scored:'完成', done:'完成', diagram_checking:'配图中', diagram_done:'完成 🎨' };
   statusEl.textContent = labels[status] || status;
   statusEl.className = 'section-status ' + (status === 'done' ? 'scored' : status);
 
@@ -758,8 +758,12 @@ function handleSSEEvent(event, data) {
     case 'progress':
       if (data.sectionId !== '__all__') {
         updateSection(data.sectionId, data.status, data.score, data.content);
-        // 【第1轮-功能】章节完成时实时追加到预览区
+        // 章节完成时实时追加到预览区
         if (data.status === 'done' && data.content) {
+          appendSectionPreview(data.sectionId, data.content);
+        }
+        // 图表生成完成，更新预览内容
+        if (data.status === 'diagram_done' && data.content) {
           appendSectionPreview(data.sectionId, data.content);
         }
       }

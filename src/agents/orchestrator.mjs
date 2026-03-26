@@ -15,6 +15,7 @@ import { TitleAgent }      from './title.mjs';
 import { LiteratureAgent } from './literature.mjs';
 import { GeneratorAgent }  from './generator.mjs';
 import { ReviewerAgent }   from './reviewer.mjs';
+import { DiagramAgent }    from './diagram.mjs';
 import { upsertSession, loadSession, saveHistory } from '../db/index.mjs';
 
 export const STATES = {
@@ -31,6 +32,7 @@ const titleAgent     = new TitleAgent();
 const literatureAgent = new LiteratureAgent();
 const generatorAgent = new GeneratorAgent();
 const reviewerAgent  = new ReviewerAgent();
+const diagramAgent   = new DiagramAgent();
 
 const RESET_CMDS = new Set(['重新开始', '重置', 'reset', '/reset', '/new']);
 
