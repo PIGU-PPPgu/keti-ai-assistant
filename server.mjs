@@ -12,6 +12,7 @@ import { cfg } from './src/config.mjs';
 import authRouter from './src/routes/auth.mjs';
 import chatRouter from './src/routes/chat.mjs';
 import exportRouter from './src/routes/export.mjs';
+import v2Router from './src/routes/v2.mjs';
 import { authMiddleware } from './src/services/auth.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,6 +34,7 @@ app.use('/api/chat/generate', rateLimit({ ...cfg.rateLimit.generate, standardHea
 app.use('/api/auth', authRouter);
 app.use('/api/chat', chatRouter);          // 对话（可选登录）
 app.use('/api/export', exportRouter);      // 导出
+app.use('/api/v2', v2Router);              // v2 9阶段流水线
 
 // 可选：对话接口支持登录态（不强制）
 app.use('/api/chat', (req, res, next) => {

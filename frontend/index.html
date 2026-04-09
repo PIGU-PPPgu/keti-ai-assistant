@@ -130,8 +130,61 @@ input:checked + .toggle-slider:before { transform: translateX(16px); }
 .btn-generate:hover { background: var(--primary-dark); }
 .btn-generate:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Mission Control */
-.mission-header { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
+/* Mission Control v2 - 9阶段流水线 */
+.mc-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+.mc-toolbar-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; flex: 1; }
+.mc-btn { background: var(--surface); border: 1.5px solid var(--border); color: var(--text-muted); font-size: 11px; padding: 4px 10px; cursor: pointer; border-radius: 20px; transition: all .15s; font-weight: 500; }
+.mc-btn:hover { border-color: var(--primary); color: var(--primary); }
+.mc-btn.danger:hover { border-color: var(--red); color: var(--red); }
+.mc-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+/* 总进度条 */
+.mc-progress-bar { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+.mc-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+.mc-progress-track { height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.mc-progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .4s ease; }
+
+/* 阶段行 */
+.stage-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; position: relative; }
+.stage-row:hover { background: var(--primary-light); }
+.stage-row.active { background: #EEF2FF; }
+.stage-step { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.stage-step.pending  { background: var(--surface-2); color: var(--text-faint); border: 1.5px solid var(--border); }
+.stage-step.running  { background: #FEF3C7; color: #D97706; border: 1.5px solid #FCD34D; animation: pulse .8s infinite; }
+.stage-step.success  { background: #D1FAE5; color: #059669; border: 1.5px solid #6EE7B7; }
+.stage-step.paused   { background: #FEE2E2; color: #DC2626; border: 1.5px solid #FCA5A5; }
+.stage-step.overridden { background: #EDE9FE; color: #7C3AED; border: 1.5px solid #C4B5FD; }
+.stage-step.skipped  { background: var(--surface-2); color: var(--text-faint); border: 1.5px dashed var(--border); }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+.stage-info { flex: 1; min-width: 0; }
+.stage-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.stage-log  { font-size: 11px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.stage-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+.stage-score { font-size: 12px; font-weight: 700; }
+.stage-score.high { color: var(--green); }
+.stage-score.mid  { color: var(--accent); }
+.stage-score.low  { color: var(--red); }
+.stage-duration { font-size: 10px; color: var(--text-faint); }
+.stage-actions { display: flex; gap: 4px; margin-left: 4px; }
+.stage-action-btn { background: none; border: 1px solid var(--border); color: var(--text-faint); font-size: 10px; padding: 2px 6px; cursor: pointer; border-radius: 4px; transition: all .1s; }
+.stage-action-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+/* 阶段展开详情 */
+.stage-detail { background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 10px 14px 10px 46px; display: none; }
+.stage-detail.open { display: block; }
+.stage-detail-row { display: flex; gap: 8px; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.stage-detail-label { color: var(--text-faint); width: 52px; flex-shrink: 0; }
+.stage-detail-val { color: var(--text); }
+.stage-detail-summary { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); white-space: pre-wrap; max-height: 80px; overflow-y: auto; }
+.stage-edit-area { width: 100%; margin-top: 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-family: inherit; resize: vertical; min-height: 60px; background: var(--surface); color: var(--text); }
+.stage-edit-save { margin-top: 4px; font-size: 11px; padding: 3px 10px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+
+/* Score summary */
+.score-summary { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.score-big { font-size: 36px; font-weight: 700; color: var(--green); }
+.score-label { font-size: 12px; color: var(--text-muted); }
+
+/* Legacy agent cards (v1 compat) */
 .agent-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; box-shadow: var(--shadow-sm); }
 .agent-card-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
 .agent-icon { font-size: 16px; }
@@ -143,20 +196,12 @@ input:checked + .toggle-slider:before { transform: translateX(16px); }
 .agent-badge.skip     { background: var(--surface-2); color: var(--text-faint); opacity: .6; }
 .agent-badge.error    { background: #FEE2E2; color: #DC2626; }
 .agent-log { padding: 8px 14px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); background: var(--surface-2); }
-.agent-result { padding: 8px 14px; font-size: 12px; border-top: 1px solid var(--border); background: var(--surface); }
-.agent-result-item { color: var(--text-muted); margin-bottom: 3px; }
-.agent-result-item.highlight { color: var(--primary); font-weight: 500; }
-
-/* Section progress */
 .section-list { margin-top: 4px; }
-.section-row { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-top: 1px solid var(--border); font-size: 13px; transition: background .1s; }
-.section-row:nth-child(even) { background: var(--surface-2); }
-.section-row:hover { background: var(--primary-light); }
+.section-row { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-top: 1px solid var(--border); font-size: 13px; }
 .section-name { flex: 1; color: var(--text-muted); }
 .section-status { font-size: 11px; }
 .section-status.generating { color: var(--accent); }
 .section-status.reviewing  { color: var(--blue); }
-.section-status.rewriting  { color: var(--accent); }
 .section-status.scored     { color: var(--green); }
 .section-score { font-size: 11px; font-weight: 700; min-width: 28px; text-align: right; }
 .section-score.high { color: var(--green); }
@@ -165,11 +210,6 @@ input:checked + .toggle-slider:before { transform: translateX(16px); }
 .regen-btn { background: var(--surface); border: 1.5px solid var(--border); color: var(--text-muted); font-size: 11px; padding: 2px 8px; cursor: pointer; border-radius: 20px; margin-left: 4px; transition: all .15s; }
 .regen-btn:hover { color: var(--primary); border-color: var(--primary); }
 .regen-btn:disabled { opacity: .3; cursor: not-allowed; }
-
-/* Score summary */
-.score-summary { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-.score-big { font-size: 36px; font-weight: 700; color: var(--green); }
-.score-label { font-size: 12px; color: var(--text-muted); }
 
 /* Welcome */
 .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; }
@@ -281,21 +321,30 @@ input:checked + .toggle-slider:before { transform: translateX(16px); }
       </div>
     </div>
 
-    <!-- Mission Control panel -->
+    <!-- Mission Control panel (v2: 9-stage pipeline) -->
     <div id="missionPanel" style="display:none;flex-direction:column;height:calc(100% - 44px);overflow:hidden">
-      <div class="panel-body" id="missionBody"></div>
+      <!-- Toolbar: pause/resume/export -->
+      <div class="mc-toolbar">
+        <span class="mc-toolbar-title">Mission Control</span>
+        <button class="mc-btn" id="mcPauseBtn" onclick="mcPause()" style="display:none">⏸ 暂停</button>
+        <button class="mc-btn" id="mcResumeBtn" onclick="mcResume()" style="display:none">▶ 继续</button>
+        <button class="mc-btn" id="mcExportBtn" onclick="exportWord()" style="display:none">↓ 导出</button>
+      </div>
+      <!-- Overall progress bar -->
+      <div class="mc-progress-bar" id="mcProgressBar" style="display:none">
+        <div class="mc-progress-label">
+          <span id="mcProgressText">准备中...</span>
+          <span id="mcProgressPct">0%</span>
+        </div>
+        <div class="mc-progress-track"><div class="mc-progress-fill" id="mcProgressFill" style="width:0%"></div></div>
+      </div>
+      <!-- Stage list -->
+      <div class="panel-body" id="missionBody" style="overflow-y:auto;flex:1"></div>
+      <!-- Footer: score summary after done -->
       <div class="panel-footer" id="missionFooter" style="display:none">
         <div class="score-summary">
           <div class="score-big" id="avgScoreEl">—</div>
-          <div><div class="score-label">平均质量分</div><div style="font-size:10px;opacity:.3">Critic Agent 评审</div></div>
-        </div>
-        <!-- 【第2轮-市场】多Agent对比说明 -->
-        <div class="advantage-card">
-          <div class="advantage-title">⚡ 多 Agent 优势</div>
-          <div class="advantage-row"><span class="advantage-label">文献引用</span><span class="advantage-val good">✓ 真实搜索 8+ 篇</span></div>
-          <div class="advantage-row"><span class="advantage-label">质量把控</span><span class="advantage-val good">✓ Critic 逐章评审</span></div>
-          <div class="advantage-row"><span class="advantage-label">章节一致</span><span class="advantage-val good">✓ 上下文传递</span></div>
-          <div class="advantage-row"><span class="advantage-label">单次 AI</span><span class="advantage-val bad">✗ 无以上能力</span></div>
+          <div><div class="score-label">平均质量分</div><div style="font-size:10px;opacity:.3">9阶段 Agent 评审</div></div>
         </div>
         <button class="btn-generate" onclick="exportWord()">导出 Word 文档</button>
       </div>
@@ -312,6 +361,7 @@ const state = {
   isGenerating: false,
   generatedContent: null,
   generatedTitle: null,
+  projectId: null,       // v2 pipeline project id
 };
 
 // Section definitions for Mission Control
@@ -538,8 +588,10 @@ async function startGeneration() {
   const btn = document.getElementById('generateBtn');
   if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
 
-  const withReview = document.getElementById('withReview').checked;
   const { docType, ...params } = state.params;
+
+  // 生成唯一 projectId
+  state.projectId = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 
   // Switch right panel to Mission Control
   document.getElementById('formPanel').style.display = 'none';
@@ -547,51 +599,34 @@ async function startGeneration() {
   document.getElementById('panelTitle').textContent = 'Mission Control';
   document.getElementById('panelStatus').textContent = '生成中...';
 
-  // Init mission control
-  initMissionControl(docType);
+  // Init v2 Mission Control
+  initMissionControlV2();
 
-  // Update left panel status
-  setStatus('多 Agent 生成中，请稍候...');
+  setStatus('9阶段 Agent 流水线启动中...');
+  addAIMessage('🚀 开始生成！右侧 Mission Control 实时显示 9 个阶段的进度。');
 
-  // Add chat message
-  addAIMessage('🚀 开始生成！你可以在右侧 Mission Control 看板实时查看每个 Agent 的工作进度。');
+  // 显示暂停按钮
+  document.getElementById('mcPauseBtn').style.display = '';
+  document.getElementById('mcProgressBar').style.display = '';
 
   try {
-    const res = await fetch('/api/chat/generate/direct', {
+    const res = await fetch('/api/v2/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ docType, params, withReview }),
+      body: JSON.stringify({
+        projectId: state.projectId,
+        docType,
+        metadata: params,
+      }),
     });
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      // Parse SSE blocks (separated by \n\n)
-      const blocks = buffer.split('\n\n');
-      buffer = blocks.pop(); // keep incomplete block
-
-      for (const block of blocks) {
-        const eventLine = block.split('\n').find(l => l.startsWith('event: '));
-        const dataLine  = block.split('\n').find(l => l.startsWith('data: '));
-        if (eventLine && dataLine) {
-          try {
-            handleSSEEvent(eventLine.slice(7).trim(), JSON.parse(dataLine.slice(6).trim()));
-          } catch(e) { console.warn('SSE parse error:', e); }
-        }
-      }
-    }
+    await consumeSSE(res, handleV2SSEEvent);
   } catch(e) {
     setStatus('生成失败: ' + e.message);
     addAIMessage('❌ 生成失败：' + e.message);
     state.isGenerating = false;
   } finally {
-    // 确保无论如何都重置生成状态
+    document.getElementById('mcPauseBtn').style.display = 'none';
     if (state.isGenerating) {
       state.isGenerating = false;
       setStatus('就绪');
@@ -599,214 +634,196 @@ async function startGeneration() {
   }
 }
 
-// ── Mission Control ────────────────────────────────────────────
-const agentDefs = [
-  { name: 'TitleAgent',     icon: '🎯', label: '标题生成' },
-  { name: 'LiteratureAgent',icon: '📚', label: '文献搜索' },
-  { name: 'GeneratorAgent', icon: '✍️', label: '章节生成' },
-  { name: 'OptimizerAgent', icon: '🔄', label: '循环优化' },
-  { name: 'ReviewerAgent',  icon: '🔬', label: '润色去AI化' },
+// ── Mission Control v2 ─────────────────────────────────────────
+const STAGE_DEFS = [
+  { stage: 'TOPIC_DISCOVERY',       icon: '🎯', name: '选题发现' },
+  { stage: 'LITERATURE_REVIEW',     icon: '📚', name: '文献综述' },
+  { stage: 'RESEARCH_DESIGN',       icon: '🔬', name: '研究设计' },
+  { stage: 'THEORETICAL_FRAMEWORK', icon: '🏛️', name: '理论框架' },
+  { stage: 'METHOD_PLANNING',       icon: '🗺️', name: '方法规划' },
+  { stage: 'CONTENT_GENERATION',    icon: '✍️', name: '内容生成' },
+  { stage: 'QUALITY_ASSURANCE',     icon: '✅', name: '质量保证' },
+  { stage: 'FIGURE_TABLE_GEN',      icon: '📊', name: '图表生成' },
+  { stage: 'POLISH_REVIEW',         icon: '✨', name: '润色审校' },
 ];
 
-function initMissionControl(docType) {
+// stage 运行时状态
+const stageState = {};
+
+function initMissionControlV2() {
   const body = document.getElementById('missionBody');
-  body.innerHTML = `<div class="mission-header">Agent 工作台</div>`;
+  body.innerHTML = '';
+  STAGE_DEFS.forEach((def, i) => {
+    stageState[def.stage] = { status: 'pending', score: null, duration: null, log: '', data: null };
 
-  // Agent cards
-  for (const a of agentDefs) {
-    const card = document.createElement('div');
-    card.className = 'agent-card';
-    card.id = 'agent-' + a.name;
-    card.innerHTML = `
-      <div class="agent-card-header">
-        <span class="agent-icon">${a.icon}</span>
-        <span class="agent-name">${a.label}</span>
-        <span class="agent-badge waiting" id="badge-${a.name}">等待</span>
-      </div>`;
-    body.appendChild(card);
-  }
-
-  // Section list under GeneratorAgent
-  const sections = SECTION_DEFS[docType] || [];
-  const genCard = document.getElementById('agent-GeneratorAgent');
-  const sectionList = document.createElement('div');
-  sectionList.className = 'section-list';
-  sectionList.id = 'sectionList';
-  for (const s of sections) {
     const row = document.createElement('div');
-    row.className = 'section-row';
-    row.id = 'section-' + s.id;
-    row.innerHTML = `<span class="section-name">${s.n}</span><span class="section-status" id="sstatus-${s.id}">—</span><span class="section-score" id="sscore-${s.id}"></span><button class="regen-btn" id="regen-${s.id}" onclick="regenerateSection('${s.id}','${s.n}')" style="display:none" title="重新生成此章节">↺</button>`;
-    sectionList.appendChild(row);
-  }
-  genCard.appendChild(sectionList);
+    row.className = 'stage-row';
+    row.id = 'stage-row-' + def.stage;
+    row.onclick = () => toggleStageDetail(def.stage);
+    row.innerHTML = `
+      <div class="stage-step pending" id="stage-step-${def.stage}">${i + 1}</div>
+      <div class="stage-info">
+        <div class="stage-name">${def.icon} ${def.name}</div>
+        <div class="stage-log" id="stage-log-${def.stage}">等待中</div>
+      </div>
+      <div class="stage-meta">
+        <div class="stage-score" id="stage-score-${def.stage}"></div>
+        <div class="stage-duration" id="stage-dur-${def.stage}"></div>
+      </div>
+      <div class="stage-actions" id="stage-actions-${def.stage}" style="display:none">
+        <button class="stage-action-btn" onclick="event.stopPropagation();mcRerunStage('${def.stage}')" title="重跑此阶段">↺</button>
+        <button class="stage-action-btn" onclick="event.stopPropagation();mcEditStage('${def.stage}')" title="人工编辑">✏</button>
+      </div>`;
+    body.appendChild(row);
+
+    // 展开详情区
+    const detail = document.createElement('div');
+    detail.className = 'stage-detail';
+    detail.id = 'stage-detail-' + def.stage;
+    body.appendChild(detail);
+  });
 }
 
-function updateAgentCard(name, status, log, result) {
-  const badge = document.getElementById('badge-' + name);
-  if (!badge) return;
+function toggleStageDetail(stage) {
+  const detail = document.getElementById('stage-detail-' + stage);
+  if (!detail) return;
+  const isOpen = detail.classList.contains('open');
+  // 关闭所有
+  document.querySelectorAll('.stage-detail.open').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.stage-row.active').forEach(r => r.classList.remove('active'));
+  if (!isOpen) {
+    detail.classList.add('open');
+    document.getElementById('stage-row-' + stage)?.classList.add('active');
+    renderStageDetail(stage);
+  }
+}
 
-  const labels = { waiting:'等待', running:'运行中', done:'完成', skip:'跳过', error:'错误' };
-  badge.textContent = labels[status] || status;
-  badge.className = 'agent-badge ' + status;
+function renderStageDetail(stage) {
+  const detail = document.getElementById('stage-detail-' + stage);
+  const s = stageState[stage];
+  if (!detail || !s) return;
 
-  const card = document.getElementById('agent-' + name);
-  if (!card) return;
+  const def = STAGE_DEFS.find(d => d.stage === stage);
+  const scoreStr = s.score != null ? (s.score * 100).toFixed(0) + '%' : '—';
+  const durStr = s.duration ? (s.duration / 1000).toFixed(1) + 's' : '—';
+  const modelStr = s.modelUsed || '—';
 
-  // Update log
-  if (log) {
-    let logEl = card.querySelector('.agent-log');
-    if (!logEl) { logEl = document.createElement('div'); logEl.className = 'agent-log'; card.appendChild(logEl); }
-    logEl.textContent = log;
+  let html = `
+    <div class="stage-detail-row"><span class="stage-detail-label">状态</span><span class="stage-detail-val">${s.status}</span></div>
+    <div class="stage-detail-row"><span class="stage-detail-label">质量分</span><span class="stage-detail-val">${scoreStr}</span></div>
+    <div class="stage-detail-row"><span class="stage-detail-label">耗时</span><span class="stage-detail-val">${durStr}</span></div>
+    <div class="stage-detail-row"><span class="stage-detail-label">模型</span><span class="stage-detail-val">${modelStr}</span></div>`;
+
+  if (s.data) {
+    const summary = typeof s.data === 'string' ? s.data.slice(0, 300) : JSON.stringify(s.data, null, 2).slice(0, 300);
+    html += `<div class="stage-detail-summary">${summary}${summary.length >= 300 ? '...' : ''}</div>`;
   }
 
-  // Update result
-  if (result) {
-    let resEl = card.querySelector('.agent-result');
-    if (!resEl) { resEl = document.createElement('div'); resEl.className = 'agent-result'; card.appendChild(resEl); }
-    resEl.innerHTML = '';
-    if (result.recommended) {
-      const d = document.createElement('div');
-      d.className = 'agent-result-item highlight';
-      d.textContent = '推荐：' + result.recommended;
-      resEl.appendChild(d);
-    }
-    if (result.candidates?.length) {
-      result.candidates.forEach((t, i) => {
-        const d = document.createElement('div');
-        d.className = 'agent-result-item';
-        d.textContent = `${i+1}. ${t}`;
-        resEl.appendChild(d);
-      });
-    }
-    if (result.count !== undefined) {
-      const d = document.createElement('div');
-      d.className = 'agent-result-item highlight';
-      d.textContent = `找到 ${result.count} 篇文献`;
-      resEl.appendChild(d);
-    }
-    if (result.preview?.length) {
-      result.preview.forEach(t => {
-        if (!t) return;
-        const d = document.createElement('div');
-        d.className = 'agent-result-item';
-        d.textContent = '· ' + t.slice(0, 40) + (t.length > 40 ? '...' : '');
-        resEl.appendChild(d);
-      });
-    }
-  }
+  detail.innerHTML = html;
+}
 
+function updateStageRow(stage, status, log, score, durationMs, modelUsed, data) {
+  const s = stageState[stage];
+  if (!s) return;
+
+  if (status) s.status = status;
+  if (log) s.log = log;
+  if (score != null) s.score = score;
+  if (durationMs != null) s.duration = durationMs;
+  if (modelUsed) s.modelUsed = modelUsed;
+  if (data) s.data = data;
+
+  const stepEl = document.getElementById('stage-step-' + stage);
+  const logEl  = document.getElementById('stage-log-' + stage);
+  const scoreEl = document.getElementById('stage-score-' + stage);
+  const durEl  = document.getElementById('stage-dur-' + stage);
+  const actEl  = document.getElementById('stage-actions-' + stage);
+
+  if (stepEl) {
+    stepEl.className = 'stage-step ' + (status || 'pending');
+    const def = STAGE_DEFS.find(d => d.stage === stage);
+    const idx = STAGE_DEFS.indexOf(def) + 1;
+    stepEl.textContent = status === 'success' ? '✓' : status === 'paused' ? '!' : idx;
+  }
+  if (logEl && log) logEl.textContent = log;
+  if (scoreEl && score != null) {
+    const pct = (score * 100).toFixed(0);
+    scoreEl.textContent = pct + '%';
+    scoreEl.className = 'stage-score ' + (score >= 0.85 ? 'high' : score >= 0.70 ? 'mid' : 'low');
+  }
+  if (durEl && durationMs != null) durEl.textContent = (durationMs / 1000).toFixed(1) + 's';
+  if (actEl && (status === 'success' || status === 'overridden')) actEl.style.display = 'flex';
+
+  // 更新总进度
+  updateOverallProgress();
   document.getElementById('missionBody').scrollTop = 9999;
 }
 
-function updateSection(id, status, score, content) {
-  const statusEl = document.getElementById('sstatus-' + id);
-  const scoreEl  = document.getElementById('sscore-' + id);
-  if (!statusEl) return;
+function updateOverallProgress() {
+  const total = STAGE_DEFS.length;
+  const done = STAGE_DEFS.filter(d => stageState[d.stage]?.status === 'success' || stageState[d.stage]?.status === 'overridden').length;
+  const running = STAGE_DEFS.filter(d => stageState[d.stage]?.status === 'running').length;
+  const pct = Math.round(((done + running * 0.5) / total) * 100);
 
-  const labels = { generating:'生成中', reviewing:'评审中', rewriting:'重写中', scored:'完成', done:'完成', diagram_checking:'配图中', diagram_done:'完成 🎨' };
-  statusEl.textContent = labels[status] || status;
-  statusEl.className = 'section-status ' + (status === 'done' ? 'scored' : status);
-
-  if (score !== null && score !== undefined) {
-    scoreEl.textContent = score + '/10';
-    scoreEl.className = 'section-score ' + (score >= 8 ? 'high' : score >= 6 ? 'mid' : 'low');
-  }
-
-  // 【第1轮-交互】章节完成后存储内容，支持点击展开
-  if (content) {
-    const row = document.getElementById('section-' + id);
-    if (row) {
-      row.style.cursor = 'pointer';
-      row.title = '点击预览内容';
-      row._content = content;
-      row.onclick = () => {
-        const existing = row.nextElementSibling;
-        if (existing && existing.classList.contains('section-preview')) {
-          existing.remove();
-          return;
-        }
-        const preview = document.createElement('div');
-        preview.className = 'section-preview';
-        preview.style.cssText = 'padding:10px 14px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border);line-height:1.6;white-space:pre-wrap;max-height:120px;overflow-y:auto;background:var(--surface-2)';
-        preview.textContent = content.slice(0, 400) + (content.length > 400 ? '...' : '');
-        row.after(preview);
-      };
-      // 【第3轮-功能】显示重新生成按钮
-      const regenBtn = document.getElementById('regen-' + id);
-      if (regenBtn) regenBtn.style.display = 'inline-block';
-    }
-  }
-
-  // Mark GeneratorAgent as running
-  const badge = document.getElementById('badge-GeneratorAgent');
-  if (badge && badge.textContent === '等待') {
-    badge.textContent = '运行中';
-    badge.className = 'agent-badge running';
-  }
+  document.getElementById('mcProgressFill').style.width = pct + '%';
+  document.getElementById('mcProgressPct').textContent = pct + '%';
+  document.getElementById('mcProgressText').textContent = `${done}/${total} 阶段完成`;
 }
 
-// ── SSE Event Handler ──────────────────────────────────────────
-function handleSSEEvent(event, data) {
-  switch(event) {
-    case 'phase':
-      setStatus(`Phase ${data.phase}: ${data.message}`);
+// ── v2 SSE 事件处理 ────────────────────────────────────────────
+function handleV2SSEEvent(event, data) {
+  switch (event) {
+    case 'pipeline_start':
+      setStatus(`流水线启动，共 ${data.totalStages} 个阶段${data.resuming ? '（断点续跑）' : ''}`);
       break;
 
-    case 'agent':
-      updateAgentCard(data.name, data.status, data.log, data.result);
+    case 'pipeline_resume':
+      setStatus(`从 ${data.fromStage} 断点续跑`);
+      addAIMessage(`⏩ 从上次中断的 "${data.fromStage}" 阶段继续生成。`);
       break;
 
-    case 'title':
-      if (data.title) {
-        state.generatedTitle = data.title;
-        const titleInput = document.querySelector('.form-input');
-        if (titleInput) titleInput.value = data.title;
-        // 【第1轮-交互】标题确认后立即显示在顶栏
-        document.getElementById('topbarTitle').textContent = data.title;
-      }
+    case 'stage_start':
+      updateStageRow(data.stage, 'running', `${data.model} 运行中...`, null, null, data.model, null);
+      setStatus(`阶段 ${data.step}/${data.total}：${data.stageName}`);
       break;
 
-    case 'optimize':
-      handleOptimizeEvent(data);
+    case 'stage_score':
+      updateStageRow(data.stage, null, `质量评分 ${(data.score * 100).toFixed(0)}%${data.passed ? ' ✓' : ' 重试中...'}`, data.score, null, null, null);
       break;
 
-    case 'progress':
-      if (data.sectionId !== '__all__') {
-        updateSection(data.sectionId, data.status, data.score, data.content);
-        // 章节完成时实时追加到预览区
-        if (data.status === 'done' && data.content) {
-          appendSectionPreview(data.sectionId, data.content);
-        }
-        // 图表生成完成，更新预览内容
-        if (data.status === 'diagram_done' && data.content) {
-          appendSectionPreview(data.sectionId, data.content);
-        }
-      }
+    case 'stage_retry':
+      updateStageRow(data.stage, 'running', `第 ${data.attempt} 次重试（${data.reasons?.join('；') || '质量不达标'}）`, null, null, null, null);
       break;
 
-    case 'done':
-      state.generatedContent = data.content;
-      state.generatedTitle = data.title || state.generatedTitle;
+    case 'stage_complete':
+      updateStageRow(data.stage, data.status === 'PAUSED' ? 'paused' : 'success',
+        data.status === 'PAUSED' ? '质量不达标，已暂停' : `完成 · ${(data.score * 100).toFixed(0)}%`,
+        data.score, data.durationMs, data.modelUsed, null);
+      break;
+
+    case 'stage_paused':
+      updateStageRow(data.stage, 'paused', `暂停：${data.reason === 'quality_failed' ? '质量不达标' : '用户请求'}`, null, null, null, null);
+      document.getElementById('mcPauseBtn').style.display = 'none';
+      document.getElementById('mcResumeBtn').style.display = '';
+      document.getElementById('panelStatus').textContent = '已暂停';
+      addAIMessage(`⏸ 流水线已暂停（${data.stageName}）。点击"继续"从下一阶段恢复。`);
       state.isGenerating = false;
+      break;
 
-      // Update mission control
-      updateAgentCard('GeneratorAgent', 'done', `生成完成，平均分 ${data.avgScore}/10`, null);
-      document.getElementById('avgScoreEl').textContent = data.avgScore;
-      // 质量分颜色
-      const scoreEl = document.getElementById('avgScoreEl');
-      scoreEl.style.color = data.avgScore >= 8 ? 'var(--green)' : data.avgScore >= 6 ? 'var(--accent)' : 'var(--red)';
-      if (data.optimizeRounds) {
-        const sub = document.createElement('div');
-        sub.style.cssText = 'font-size:12px;color:var(--text-faint);margin-top:2px';
-        sub.textContent = `经 ${data.optimizeRounds} 轮优化`;
-        scoreEl.parentElement.appendChild(sub);
-      }
-      document.getElementById('missionFooter').style.display = 'block';
+    case 'pipeline_paused':
+      document.getElementById('mcPauseBtn').style.display = 'none';
+      document.getElementById('mcResumeBtn').style.display = '';
+      document.getElementById('panelStatus').textContent = '已暂停';
+      state.isGenerating = false;
+      break;
+
+    case 'pipeline_complete':
+      setStatus('全部 9 个阶段完成！');
       document.getElementById('panelStatus').textContent = '生成完成';
-
-      // Show result in left panel (用完整内容替换预览)
-      showResult(data.content, state.generatedTitle, data.wordCount, data.avgScore);
+      document.getElementById('mcPauseBtn').style.display = 'none';
+      document.getElementById('mcExportBtn').style.display = '';
+      document.getElementById('missionFooter').style.display = 'block';
+      state.isGenerating = false;
       break;
 
     case 'error':
@@ -814,6 +831,170 @@ function handleSSEEvent(event, data) {
       addAIMessage('❌ 生成出错：' + data.message);
       state.isGenerating = false;
       break;
+
+    // 兼容旧 v1 事件（content_generation 阶段内部可能发出）
+    case 'progress':
+      if (data.sectionId && data.sectionId !== '__all__' && data.status === 'done' && data.content) {
+        appendSectionPreview(data.sectionId, data.content);
+      }
+      break;
+
+    case 'done':
+      // v1 done 事件（来自 content_generation 内部）
+      if (data.content) {
+        state.generatedContent = data.content;
+        state.generatedTitle = data.title || state.generatedTitle;
+        showResult(data.content, state.generatedTitle, data.wordCount, data.avgScore);
+        const avgEl = document.getElementById('avgScoreEl');
+        if (avgEl && data.avgScore) {
+          avgEl.textContent = data.avgScore;
+          avgEl.style.color = data.avgScore >= 8 ? 'var(--green)' : data.avgScore >= 6 ? 'var(--accent)' : 'var(--red)';
+        }
+      }
+      break;
+  }
+}
+
+// ── 暂停 / 继续 / 重跑 ─────────────────────────────────────────
+async function mcPause() {
+  if (!state.projectId) return;
+  await fetch('/api/v2/pause', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ projectId: state.projectId }),
+  });
+  document.getElementById('mcPauseBtn').style.display = 'none';
+  setStatus('暂停信号已发送...');
+}
+
+async function mcResume() {
+  if (!state.projectId || !state.params) return;
+  const { docType, ...params } = state.params;
+  state.isGenerating = true;
+  document.getElementById('mcResumeBtn').style.display = 'none';
+  document.getElementById('mcPauseBtn').style.display = '';
+  document.getElementById('panelStatus').textContent = '继续生成中...';
+  setStatus('从断点继续...');
+
+  try {
+    const res = await fetch('/api/v2/resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: state.projectId, docType, metadata: params }),
+    });
+    await consumeSSE(res, handleV2SSEEvent);
+  } catch(e) {
+    addAIMessage('❌ 继续失败：' + e.message);
+    state.isGenerating = false;
+  } finally {
+    document.getElementById('mcPauseBtn').style.display = 'none';
+  }
+}
+
+async function mcRerunStage(stage) {
+  if (!state.projectId || !state.params || state.isGenerating) return;
+  const { docType, ...params } = state.params;
+  const def = STAGE_DEFS.find(d => d.stage === stage);
+  if (!confirm(`重跑"${def?.name || stage}"及其下游阶段？`)) return;
+
+  state.isGenerating = true;
+  updateStageRow(stage, 'running', '重跑中...', null, null, null, null);
+  // 清除下游阶段状态
+  const idx = STAGE_DEFS.findIndex(d => d.stage === stage);
+  STAGE_DEFS.slice(idx + 1).forEach(d => updateStageRow(d.stage, 'pending', '等待中', null, null, null, null));
+
+  document.getElementById('mcPauseBtn').style.display = '';
+  document.getElementById('mcResumeBtn').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/v2/rerun-stage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: state.projectId, docType, metadata: params, stage }),
+    });
+    await consumeSSE(res, handleV2SSEEvent);
+  } catch(e) {
+    addAIMessage('❌ 重跑失败：' + e.message);
+    state.isGenerating = false;
+  } finally {
+    document.getElementById('mcPauseBtn').style.display = 'none';
+  }
+}
+
+function mcEditStage(stage) {
+  const detail = document.getElementById('stage-detail-' + stage);
+  if (!detail) return;
+  // 确保展开
+  if (!detail.classList.contains('open')) toggleStageDetail(stage);
+
+  const s = stageState[stage];
+  const currentVal = s.data ? (typeof s.data === 'string' ? s.data : JSON.stringify(s.data, null, 2)) : '';
+
+  // 如果已有编辑区，不重复添加
+  if (detail.querySelector('.stage-edit-area')) return;
+
+  const textarea = document.createElement('textarea');
+  textarea.className = 'stage-edit-area';
+  textarea.value = currentVal;
+  textarea.rows = 5;
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'stage-edit-save';
+  saveBtn.textContent = '保存并触发下游重跑';
+  saveBtn.onclick = async () => {
+    const newVal = textarea.value.trim();
+    if (!newVal) return;
+    let modifiedData;
+    try { modifiedData = JSON.parse(newVal); } catch { modifiedData = newVal; }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = '保存中...';
+    try {
+      const res = await fetch('/api/v2/override', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: state.projectId, stage, modifiedData, reason: '人工编辑' }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        updateStageRow(stage, 'overridden', '已人工修改', null, null, null, modifiedData);
+        addAIMessage(`✅ "${STAGE_DEFS.find(d=>d.stage===stage)?.name}" 已保存，下游阶段检查点已清除，可点击"继续"重跑。`);
+        document.getElementById('mcResumeBtn').style.display = '';
+        textarea.remove();
+        saveBtn.remove();
+      } else {
+        saveBtn.textContent = '保存失败';
+        saveBtn.disabled = false;
+      }
+    } catch(e) {
+      saveBtn.textContent = '保存失败';
+      saveBtn.disabled = false;
+    }
+  };
+
+  detail.appendChild(textarea);
+  detail.appendChild(saveBtn);
+}
+
+// ── SSE 通用消费器 ─────────────────────────────────────────────
+async function consumeSSE(res, handler) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split('\n\n');
+    buffer = blocks.pop();
+    for (const block of blocks) {
+      const eventLine = block.split('\n').find(l => l.startsWith('event: '));
+      const dataLine  = block.split('\n').find(l => l.startsWith('data: '));
+      if (eventLine && dataLine) {
+        try { handler(eventLine.slice(7).trim(), JSON.parse(dataLine.slice(6).trim())); }
+        catch(e) { console.warn('SSE parse error:', e); }
+      }
+    }
   }
 }
 
@@ -982,6 +1163,7 @@ function startNew() {
   state.isGenerating = false;
   state.generatedContent = null;
   state.generatedTitle = null;
+  state.projectId = null;
 
   document.getElementById('chatView').style.display = 'flex';
   document.getElementById('resultView').style.display = 'none';
@@ -994,9 +1176,14 @@ function startNew() {
   document.getElementById('panelStatus').textContent = '等待确认选题';
   document.getElementById('formBody').innerHTML = '<div style="font-size:13px;text-align:center;padding:40px 0;color:var(--text-muted)">与 AI 顾问确认选题后<br>表单将自动填充</div>';
   document.getElementById('formFooter').style.display = 'none';
+  document.getElementById('missionFooter').style.display = 'none';
+  document.getElementById('mcPauseBtn').style.display = 'none';
+  document.getElementById('mcResumeBtn').style.display = 'none';
+  document.getElementById('mcExportBtn').style.display = 'none';
+  document.getElementById('mcProgressBar').style.display = 'none';
   setStatus('就绪');
 
-  addAIMessage('你好！我是课题 AI 顾问。\n\n我会用 **4个专业 Agent** 协作帮你生成课题申报书：\n• 🔍 文献 Agent — 真实搜索学术文献\n• ✍️ 生成 Agent — 逐章专业撰写\n• 🎯 评审 Agent — Critic 循环质量把控\n• ✨ 润色 Agent — 去AI化处理\n\n告诉我你的学科和想研究的方向，我来帮你确认选题。');
+  addAIMessage('你好！我是课题 AI 顾问。\n\n我会用 **9个专业 Agent** 协作帮你生成课题申报书：\n• 🎯 选题发现 → 📚 文献综述 → 🔬 研究设计\n• 🏛️ 理论框架 → 🗺️ 方法规划 → ✍️ 内容生成\n• ✅ 质量保证 → 📊 图表生成 → ✨ 润色审校\n\n告诉我你的学科和想研究的方向，我来帮你确认选题。');
 }
 </script>
 </body>
